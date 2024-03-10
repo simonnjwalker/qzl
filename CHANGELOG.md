@@ -1,3 +1,7 @@
+## [1.0.2] - 2024-03-10
+### Fixed
+- No more errors when loading tables from Excel with no columns.
+
 ## [1.0.1] - 2024-03-10
 ### Fixed
 - Install script commands.

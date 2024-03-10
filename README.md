@@ -41,7 +41,14 @@ This is an executable file that can be compiled into a shared folder with the sy
     cd c:\SNJW\code\shared\ 
     xcopy c:\SNJW\code\shared\qzlbuild\qzl\bin\Debug\net7.0\*.* c:\SNJW\code\shared\qzl /Y /H /R /I
     rd qzlbuild /S /Q 
+    cd c:\SNJW\code\shared\qzl 
     @echo Finished installing qzl 
+    @echo To test this out, try these commands:
+    @echo qzl sql -c "test.db"
+    @echo qzl sql -c "test.db" -q "CREATE TABLE Users(Id TEXT, Name TEXT, Code TEXT);"
+    @echo qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code) VALUES('1','Amy','AWB');"
+    @echo qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code) VALUES('2','Brad','BZ');"
+    @echo qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "test.xlsx"
 
 ## Sample code
 

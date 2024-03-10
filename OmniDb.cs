@@ -1799,6 +1799,10 @@ namespace Seamlex.Utilities
 
             foreach (DataTable table in xlsxds.Tables)
             {
+                // 2024-03-10 SNJW there can be XSLX files with no data - let this continue
+                if(table.Columns.Count==0)
+                    continue;
+                    
                 StringBuilder columnDefinitions = new StringBuilder();
                 foreach (DataColumn column in table.Columns)
                 {

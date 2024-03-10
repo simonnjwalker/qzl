@@ -288,9 +288,17 @@ namespace Seamlex.Utilities
 
             if(querymode == "NonQuery" && ( verbosity == "Default" || verbosity == "Full" ) )
             {
-                if(verbosity == "Full")
-                    console.Append("Rows affected: ");
-                console.Append(result.ToString());
+                if(result < -1 && verbosity == "Full")
+                    console.Append("The operation did not complete successfully.  ");
+
+                if(result >= -1 && verbosity == "Full")
+                    console.Append("The operation completed successfully.  ");
+                
+                if(result >= 0)
+                    console.Append($"Rows affected: {result}");
+                
+                if(result < 0)
+                    console.Append($"Error code: {result}");
             }
 
 
@@ -315,6 +323,8 @@ full      NonQuery: 'Rows affected: n'
                     '[Row2Item1[|Row2Item2][|Row2Item3][..]]"
 
 */
+
+
 
             this.lastmessage = console.ToString();
 
