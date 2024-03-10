@@ -25,44 +25,66 @@ When installed, the syntax for use is as follows:
 
 ## Installation
 This is an executable file that can be compiled into a shared folder with the syntax below.  Change to your directories.
- 
-    @echo *****************************************
-    @echo Install qzl
-    @echo *****************************************
-    @echo Installing qzl in c:\SNJW\code\shared
-    cd c:\SNJW\code\shared
-    del qzl.* /Q /F
-    rd qzl /S /Q
-    git clone https://github.com/simonnjwalker/qzl.git
-    cd c:\SNJW\code\shared\qzl
-    dotnet build
-    cd..
-    xcopy c:\SNJW\code\shared\qzl\bin\Debug\net7.0\qzl.* c:\SNJW\code\shared /Y /H /R
-    rd qzl /S /Q
-    @echo Finished installing qzl
 
+    @echo ***************************************** 
+    @echo Install qzl 
+    @echo ***************************************** 
+    @echo Installing qzl in c:\SNJW\code\shared\qzl 
+    cd c:\SNJW\code\shared 
+    rd qzl /S /Q 
+    rd qzlbuild /S /Q 
+    md qzlbuild
+    cd qzlbuild
+    git clone https://github.com/simonnjwalker/qzl.git 
+    cd c:\SNJW\code\shared\qzlbuild\qzl 
+    dotnet build 
+    cd c:\SNJW\code\shared\ 
+    xcopy c:\SNJW\code\shared\qzlbuild\qzl\bin\Debug\net7.0\*.* c:\SNJW\code\shared\qzl /Y /H /R /I
+    rd qzlbuild /S /Q 
+    @echo Finished installing qzl 
 
 ## Sample code
 
 ### Create a new Excel file
 To create a new Excel file with a single sheet and headers:
+
     qzl sql -c "C:\temp\source.xlsx" -q "CREATE TABLE Users (Id TEXT, Name TEXT, Code TEXT);"
 
+### Create a new SQLite file
+To create a new SQLite database with a single table:
+
+    qzl sql -c "C:\temp\source.db" -q "CREATE TABLE Users (Id TEXT, Name TEXT, Code TEXT);"
+
+Note that the fully-formed connection-string can alternatively be passed:
+
+    qzl sql -c "Data Source=C:\temp\source.db;" -q "CREATE TABLE Users (Id TEXT, Name TEXT, Code TEXT);"
+
+A blank database could also be created by omitting the query:
+
+    qzl sql -c "C:\temp\source.db"
+
 ### Insert data into an Excel document
-To insert rows of data into this Excel file:
+To insert rows of data into an Excel file line-by-line:
+
     qzl sql -c "C:\temp\source.xlsx" -q "INSERT INTO Users (Id, Name, Code) VALUES (1, 'Simon', 'SWAL007');"
+
     qzl sql -c "C:\temp\source.xlsx" -q "INSERT INTO Users (Id, Name, Code) VALUES (2, 'Karen', 'KING001');"
+
     qzl sql -c "C:\temp\source.xlsx" -q "INSERT INTO Users (Id, Name, Code) VALUES (3, 'Devon', 'DBON004');"
+
     qzl sql -c "C:\temp\source.xlsx" -q "INSERT INTO Users (Id, Name, Code) VALUES (4, 'Steve', 'SGRA001');"
 
 ### Update data in an Excel document
 To change rows of data in an Excel file:
+
     qzl sql -c "C:\temp\source.xlsx" -q "UPDATE Users SET Name = 'Devin' WHERE Id = 3;"
 
 ### Delete data in an Excel document
 To remove rows of data in an Excel file:
+
     qzl sql -c "C:\temp\source.xlsx" -q "DELETE FROM Users WHERE Id > 3;"
 
 ### Save into a separate Excel file
-To output to a new file, specifiy this in the "--output" field:
+To output to a new file, specify this in the "--output" field:
+
     qzl sql -c "C:\temp\source.xlsx" -q "SELECT * FROM Users WHERE Id <= 3;" --output "C:\temp\users.xlsx"

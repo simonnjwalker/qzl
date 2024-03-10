@@ -320,7 +320,6 @@ namespace Seamlex.Utilities
                             nextparatype = ParameterType.Any
                         });
 
-
                     // TO DO: have the connection string be retrieves from userssecrets and/or config files 
                     // https://learn.microsoft.com/en-us/ef/core/managing-schemas/scaffolding/?tabs=dotnet-core-cli
 

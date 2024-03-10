@@ -61,7 +61,6 @@ namespace Seamlex.Utilities
             return this.Action(this.mv);
         }
 
-
         public bool Action(QzlGenInfo source)
         {
             // this checks whether the content of parameters are correct
@@ -115,7 +114,6 @@ namespace Seamlex.Utilities
             //     this.lastmessage = $"Creating a {source.categoryname} requires a Controller action name.";
             //     return false;
             // }
-            
 
             return true;
         }
@@ -135,24 +133,22 @@ namespace Seamlex.Utilities
         public bool SqlAction(QzlGenInfo source)
         {
 
-            string text = "";
-
             // TO DO - wire the console up to the parameters
-/*
+            /*
 
-category [string]:"reader"
-categoryname [string]:""
-connection [string]:"Data Source=app.db"
-dqchar [string]:""
-indent [int]:4
-lastmessage [string]:""
-output [string]:""
-provider [string]:"sqllite"
-query [string]:"SELECT * FROM AspNetUsers;"
-source [string]:""
-verbosity [string]:""
+            category [string]:"reader"
+            categoryname [string]:""
+            connection [string]:"Data Source=app.db"
+            dqchar [string]:""
+            indent [int]:4
+            lastmessage [string]:""
+            output [string]:""
+            provider [string]:"sqllite"
+            query [string]:"SELECT * FROM AspNetUsers;"
+            source [string]:""
+            verbosity [string]:""
 
-*/
+            */
 
 
             OmniDb sqldb = new();
@@ -181,7 +177,6 @@ verbosity [string]:""
             // then overwrite the source file ONLY if a nonquery and is either Default or specified
             if(provider == "Microsoft.Excel" && querymode == "NonQuery" && outputfile == "" && outputformat != "None")
                 outputfile = source.connection;
-
 
             if(outputformat == "" && outputfile == "")
                 outputformat = "None";
@@ -256,9 +251,10 @@ verbosity [string]:""
                     this.lastmessage = sqldb.LastError;
                     return false;
                 }
-
-
             }
+
+            if(result >= -1)
+                result = sqldb.RowsAffected;
 
             // console output
             StringBuilder console = new();
@@ -294,7 +290,7 @@ verbosity [string]:""
             {
                 if(verbosity == "Full")
                     console.Append("Rows affected: ");
-                console.Append(sqldb.RowsAffected.ToString());
+                console.Append(result.ToString());
             }
 
 

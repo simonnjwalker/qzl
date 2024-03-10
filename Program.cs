@@ -40,7 +40,7 @@ namespace Seamlex.Utilities
             bool testnoquery = false;
             bool testinfo = false;
 
-             string source = @"C:\snjw\code\qzlwip\source.xlsx";
+             string source = @"C:\snjw\code\shared\qzl\nullsource2.db";
              string dboutput = @"C:\snjw\code\qzl\app.output.xlsx";
              string dbsource = @"C:\snjw\code\qzl\app.db";
 
@@ -55,18 +55,19 @@ namespace Seamlex.Utilities
                 // cg.parameters.Add($"xl");
                 
                 cg.parameters.Add("--connection");
-                cg.parameters.Add(source);
+                cg.parameters.Add(dbsource);
+                //cg.parameters.Add($"Data Source={dbsource};");
                 // cg.parameters.Add("--output");
-                // cg.parameters.Add(dboutput);
+                // cg.parameters.Add(dboutput); //$"Data Source={filename};"
                 cg.parameters.Add("--query");
-                cg.parameters.Add("CREATE TABLE Customers (Id TEXT, Name TEXT, Code TEXT)");
+                //cg.parameters.Add("CREATE TABLE Customers (Id TEXT, Name TEXT, Code TEXT)");
                 
                 //cg.parameters.Add("SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name;");
                 //cg.parameters.Add(" SELECT * FROM AspNetUsers;");
                 //cg.parameters.Add("DELETE FROM Users WHERE Name LIKE 'A%';");
                 //cg.parameters.Add("DELETE FROM AspNetUsers WHERE Id = '1007';");
                 //cg.parameters.Add("SELECT Id, Email, phoneNumber, username FROM AspNetUsers WHERE Id > '1000';");
-                //cg.parameters.Add("INSERT INTO AspNetUsers(Id, Email, phoneNumber, username) VALUES ('1007','g@h.com','0472881881','Dave');");
+                cg.parameters.Add("INSERT INTO AspNetUsers(Id, Email, phoneNumber, username) VALUES ('1007','g@h.com','0472881881','Dave');");
                 
                 
                 cg.parameters.Add("--verbosity");

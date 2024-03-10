@@ -1446,20 +1446,54 @@ namespace Seamlex.Utilities
         private int QueryExecuteNonQuerySqlLite(string connectionstring, string query)
         {
             int output = -1;
+
+            // get the file name if there is one - add this in if not
+            string filename = connectionstring;
+            if(connectionstring.ToLower().StartsWith("data source="))
+            {
+                filename = connectionstring.Split('=',StringSplitOptions.None)[1].TrimEnd(';');
+            }
+            // Data Source=
+            // if the database file does not exist and the query is either blank or create table then create it
+            bool fileexists = File.Exists(filename);
+            if(!fileexists)
+            {
+                if(query == "")
+                {
+                    try
+                    {
+                        Microsoft.Data.Sqlite.SqliteConnection conn = new("Data Source="+filename+";");
+                        conn.Open();
+                        conn.Close();
+                    }
+                    catch
+                    {
+                        this.LastError=$"SQLite file '{filename}' cannot be created.";
+                        return -2;
+                    }
+                }
+            }
+
             try
             {
 
-                Microsoft.Data.Sqlite.SqliteConnection conn = new(connectionstring);
+                Microsoft.Data.Sqlite.SqliteConnection conn = new($"Data Source={filename};");
                 conn.Open();
-                Microsoft.Data.Sqlite.SqliteCommand cmd = new(query, conn);
 
-                // System.Data.DataSet ds = new();
-                // ds.Tables.Add(new System.Data.DataTable());
-                // ds.EnforceConstraints = false;
-                //.EnforceConstraint
-                // SqLiteDataAdapter da = new();
+                if(query != "")
+                {
+                    Microsoft.Data.Sqlite.SqliteCommand cmd = new(query, conn);
 
-                output = cmd.ExecuteNonQuery();
+                    // System.Data.DataSet ds = new();
+                    // ds.Tables.Add(new System.Data.DataTable());
+                    // ds.EnforceConstraints = false;
+                    //.EnforceConstraint
+                    // SqLiteDataAdapter da = new();
+
+                    output = cmd.ExecuteNonQuery();
+
+                }
+
 
                 conn.Close();
                 // this.LastResult=ds;
@@ -1470,13 +1504,25 @@ namespace Seamlex.Utilities
             }
             catch
             {
+                this.LastError=$"Cannot execute SQLite query '{query}' on '{filename}'.";
                 output = -2;
             }
 
             if (output == -2 || output == -3)
-                return output;
-
-
+            {
+                if(!fileexists)
+                {
+                    try
+                    {
+                        GC.Collect();
+                        File.Delete(filename);
+                    }
+                    catch
+                    {
+//                        this.LastError=$"Error initialising file '{filename}'.";
+                    }
+                }
+            }
             return output;
         }
 
@@ -1568,12 +1614,18 @@ namespace Seamlex.Utilities
 
         private int QueryExecuteReaderSqlLite(string connectionstring, string query)
         {
+
+            // get the file name if there is one - add this in if not
+            string filename = connectionstring;
+            if(connectionstring.ToLower().StartsWith("data source="))
+                filename = connectionstring.Split('=',StringSplitOptions.None)[1].TrimEnd(';');
+
             int output = -1;
             System.Data.DataSet ds = new();
             string error = "";
             try
             {
-                Microsoft.Data.Sqlite.SqliteConnection conn = new(connectionstring);
+                Microsoft.Data.Sqlite.SqliteConnection conn = new($"Data Source={filename};");
                 conn.Open();
                 Microsoft.Data.Sqlite.SqliteCommand cmd = new(query, conn);
 
@@ -1605,7 +1657,7 @@ namespace Seamlex.Utilities
                 // "SQLite Error 14: 'unable to open database file'."
                 error = e.Message;
                 if(error.Contains("'unable to open database file'"))
-                    error = error.Replace("'unable to open database file'","unable to open database file '"+connectionstring.Replace("Data Source=","") + "'");
+                    error = error.Replace("'unable to open database file'","unable to open database file '"+ filename + "'");
                 
             }
             if(error != "")
@@ -1621,11 +1673,16 @@ namespace Seamlex.Utilities
         private int QueryExecuteScalarSqlLite(string connectionstring, string query)
         {
             int output = -1;
+            string filename = connectionstring;
+            if(connectionstring.ToLower().StartsWith("data source="))
+                filename = connectionstring.Split('=',StringSplitOptions.None)[1].TrimEnd(';');
+            string error = "";
+
             Microsoft.Data.Sqlite.SqliteConnection conn;
             try
             {
 
-                conn = new(connectionstring);
+                conn = new($"Data Source={filename};");
                 conn.Open();
 
                 Microsoft.Data.Sqlite.SqliteCommand cmd = new(query, conn);
@@ -1643,16 +1700,20 @@ namespace Seamlex.Utilities
                 // output = ds.Tables[0].Rows.Count;
                 // return output;
 
-
             }
-            catch
+            catch(Exception e)
             {
+                // "SQLite Error 14: 'unable to open database file'."
+                error = e.Message;
+                if(error.Contains("'unable to open database file'"))
+                    error = error.Replace("'unable to open database file'","unable to open database file '"+ filename + "'");
                 output = -2;
             }
 
-            if (output == -2 || output == -3)
-                return output;
-
+            if(error != "")
+            {
+                this.LastError=error;
+            }
 
             return output;
         }
@@ -1690,17 +1751,35 @@ namespace Seamlex.Utilities
                 return -1;
             }
 
-// query, querymethod, outputmode, outputconnectionstring, outputprovider
-            if(!File.Exists(sourcefile))
-            {
-                this.LastError=$"Excel file '{sourcefile}' does not exist.";
-                return -1;
-            }
 
             int output = -1;
 
             // this displays the last error (if any)
             var xlsx = new Seamlex.Utilities.ExcelToData();
+
+// query, querymethod, outputmode, outputconnectionstring, outputprovider
+            if(!File.Exists(sourcefile))
+            {
+
+                // if the database file does not exist and the query is either blank or create table then create it
+                if(query == "" || IsCreateTableQuery(query))
+                {
+                    try
+                    {
+                        xlsx.ToExcelFile(new DataSet(),sourcefile);
+                    }
+                    catch
+                    {
+                        this.LastError=$"Excel file '{sourcefile}' cannot be created.";
+                        return -2;
+                    }
+                }
+                else
+                {
+                    this.LastError=$"Excel file '{sourcefile}' does not exist.";
+                    return -2;
+                }
+            }
 
             // this fills a .NET datatable from an XLSX file
             DataSet xlsxds = xlsx.ToDataSet(connectionstring);
@@ -2308,6 +2387,14 @@ namespace Seamlex.Utilities
             return "NonQuery";
         }
 
+        public bool IsCreateTableQuery(string sqlQuery)
+        {
+            string[] parts = sqlQuery.Trim().Split(' ',StringSplitOptions.None);
+            if(parts.Length < 3)
+                return false;
+            return parts[0].ToUpper() == "CREATE" && parts[1].ToUpper() == "TABLE";
+        }
+
         public string GuessTableName(string sqlQuery)
         {
             string tablename = "";
@@ -2385,7 +2472,9 @@ namespace Seamlex.Utilities
 
         public string GuessProvider(string connString)
         {
-            if(connString.ToLower().StartsWith("data source=") && connString.ToLower().TrimEnd(';').EndsWith(".db"))
+            if(connString.ToLower().Trim().StartsWith("data source=") && connString.ToLower().TrimEnd(';').EndsWith(".db"))
+                return "Microsoft.Data.Sqlite";
+            if(connString.ToLower().Trim().TrimEnd(';').EndsWith(".db"))
                 return "Microsoft.Data.Sqlite";
             if(connString.ToLower().TrimEnd(';').EndsWith(".xlsx"))
                 return "Microsoft.Excel";
