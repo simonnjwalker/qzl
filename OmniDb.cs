@@ -1694,6 +1694,7 @@ namespace Seamlex.Utilities
                 // SqLiteDataAdapter da = new();
                 object? result = cmd.ExecuteScalar();
                 output = Int32.Parse("0" + new string((result ?? "0").ToString().Where(char.IsDigit).ToArray()));
+                this.LastScalarResult = (result ?? "").ToString();
                 conn.Close();
                 // this.LastResult=ds;
                 // this.SetTableNames();
@@ -2206,6 +2207,7 @@ namespace Seamlex.Utilities
 
         private int QueryExecuteScalarCsv(string connectionstring, string query)
         {
+            // this needs completing - will not work as intended
             int output = -1;
             Microsoft.Data.Sqlite.SqliteConnection conn;
             try
@@ -2244,8 +2246,8 @@ namespace Seamlex.Utilities
 
         private int QueryExecuteNonQueryCsv(string connectionstring, string query)
         {
+            // this needs completing - will not work as intended
             int output = -1;
-
             try
             {
 
@@ -2670,7 +2672,7 @@ namespace Seamlex.Utilities
 
             try
             {
-                System.IO.File.WriteAllText(filename,ds.ToString());
+                ds.WriteXml(filename);
                 GC.Collect();
             }
             catch
@@ -2717,7 +2719,7 @@ namespace Seamlex.Utilities
 
             try
             {
-                System.IO.File.WriteAllText(filename,ds.ToString());
+                ds.WriteXml(filename);
                 GC.Collect();
                 output = 1;
             }
@@ -2728,7 +2730,38 @@ namespace Seamlex.Utilities
             }
             return output;
         }
+        public int ValueToTextFile(string textvalue, string filename)
+        {
+            int output = -1;
+            if(System.IO.File.Exists(filename))
+            {
+                try
+                {
+                    System.IO.File.Delete(filename);
+                    GC.Collect();
+                }
+                catch
+                {
+                    output = -2;
+                    this.LastError = $"Cannot overwrite '{filename}' with new text file.";
+                }
+                if(output == -2)
+                    return output;
+            }
 
+            try
+            {
+                File.WriteAllText(filename,textvalue);
+                GC.Collect();
+                output = 1;
+            }
+            catch
+            {
+                output = -2;
+                this.LastError = $"Cannot fill '{filename}' with dataset.";
+            }
+            return output;
+        }
 
         public int DataSetToExcelFile(DataSet ds, string filename)
         {

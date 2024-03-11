@@ -25,31 +25,38 @@ When installed, the syntax for use is as follows:
 
 ## Installation
 This is an executable file that can be compiled into a shared folder with the syntax below.  Change to your directories.
-
+    
     @echo ***************************************** 
-    @echo Install qzl 
+    @echo Install qzl on win-x64 
     @echo ***************************************** 
     @echo Installing qzl in c:\SNJW\code\shared\qzl 
     cd c:\SNJW\code\shared 
     rd qzl /S /Q 
     rd qzlbuild /S /Q 
+    md qzl 
     md qzlbuild
     cd qzlbuild
     git clone https://github.com/simonnjwalker/qzl.git 
     cd c:\SNJW\code\shared\qzlbuild\qzl 
-    dotnet build 
-    cd c:\SNJW\code\shared\ 
-    xcopy c:\SNJW\code\shared\qzlbuild\qzl\bin\Debug\net7.0\*.* c:\SNJW\code\shared\qzl /Y /H /R /I
+    dotnet publish -r win-x64 -p:PublishSingleFile=True --self-contained false --use-current-runtime true 
+    xcopy c:\snjw\code\shared\qzlbuild\qzl\bin\Debug\net7.0\win-x64\publish\*.* c:\SNJW\code\shared\qzl /Y /H /R /I
+    cd c:\snjw\code\shared 
     rd qzlbuild /S /Q 
-    cd c:\SNJW\code\shared\qzl 
+    cd c:\snjw\code\shared\qzl 
+    
     @echo Finished installing qzl 
-    @echo To test this out, try these commands:
-    @echo qzl sql -c "test.db"
-    @echo qzl sql -c "test.db" -q "CREATE TABLE Users(Id TEXT, Name TEXT, Code TEXT);"
-    @echo qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code) VALUES('1','Amy','AWB');"
-    @echo qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code) VALUES('2','Brad','BZ');"
-    @echo qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "test.xlsx"
-
+    @echo To test this out, try these commands: 
+    qzl sql -c "test.db" -q "CREATE TABLE Users(Id TEXT, Name TEXT, Code TEXT, Level INTEGER);"
+    qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code, Level) VALUES('1','Amy','AWB',1);" 
+    qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code, Level) VALUES('2','Brad','BZ',2);" 
+    qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code, Level) VALUES('3','Ciri','CW',1);" 
+    qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code, Level) VALUES('4','Dave','DG',1);" 
+    qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code, Level) VALUES('5','Elle','EM',3);" 
+    qzl sql -c "test.db" -q "INSERT INTO Users(Id, Name, Code, Level) VALUES('6','Fred','FF',1);" 
+    qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "test.xlsx" 
+    qzl sql -c "test.db" -q "SELECT COUNT(*) AS usrcount FROM Users WHERE Level=1 GROUP BY Level;" -o "result.txt" -m Scalar
+    qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "users.csv"
+    
 ## Sample code
 
 ### Create a new Excel file

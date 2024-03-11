@@ -44,18 +44,68 @@ namespace Seamlex.Utilities
              string dboutput = @"C:\snjw\code\qzl\app.output.xlsx";
              string dbsource = @"C:\snjw\code\qzl\app.db";
 
+
+
+// qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "users.csv"
+
+
+
             if(testxlsx)
             {
                 // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
                 cg.parameters.Clear();
                 cg.parameters.Add("sql");
                 cg.parameters.Add("-c");
-                cg.parameters.Add(@"c:\temp\f.xlsx");
+                cg.parameters.Add(@"C:\snjw\code\shared\qzl\test.db");
                 cg.parameters.Add("-q");
-                cg.parameters.Add("CREATE TABLE Users (Id TEXT);");
+                cg.parameters.Add(@"SELECT * FROM Users;");
+                cg.parameters.Add("-o");
+                cg.parameters.Add(@"C:\snjw\code\shared\qzl\users.csv");
+
+                // qzl sql -c "test.db" -q "SELECT COUNT(*) AS usrcount FROM Users WHERE Level=1 GROUP BY Level;"  -m Scalar
+                // cg.parameters.Add("-q");
+                // cg.parameters.Add("CREATE TABLE Users (Id TEXT);");
                 cg.Run();
                 return;
             }
+
+
+            // if(testxlsx)
+            // {
+            //     // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+            //     cg.parameters.Clear();
+            //     cg.parameters.Add("sql");
+            //     cg.parameters.Add("-c");
+            //     cg.parameters.Add(@"C:\snjw\code\shared\qzl\test.db");
+            //     cg.parameters.Add("-q");
+            //     cg.parameters.Add(@"SELECT COUNT(*) AS usrcount FROM Users WHERE Level=1 GROUP BY Level;");
+            //     cg.parameters.Add("-m");
+            //     cg.parameters.Add("Scalar");
+            //     cg.parameters.Add("-o");
+            //     cg.parameters.Add(@"C:\snjw\code\shared\qzl\scalar.txt");
+
+            //     // qzl sql -c "test.db" -q "SELECT COUNT(*) AS usrcount FROM Users WHERE Level=1 GROUP BY Level;"  -m Scalar
+            //     // cg.parameters.Add("-q");
+            //     // cg.parameters.Add("CREATE TABLE Users (Id TEXT);");
+            //     cg.Run();
+            //     return;
+            // }
+
+
+
+            // if(testxlsx)
+            // {
+            //     // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+            //     sql -c "Data Source=c:\temp\test.db;"
+            //     cg.parameters.Clear();
+            //     cg.parameters.Add("sql");
+            //     cg.parameters.Add("-c");
+            //     cg.parameters.Add(@"c:\temp\f.xlsx");
+            //     cg.parameters.Add("-q");
+            //     cg.parameters.Add("CREATE TABLE Users (Id TEXT);");
+            //     cg.Run();
+            //     return;
+            // }
 
             // if(testxlsx)
             // {

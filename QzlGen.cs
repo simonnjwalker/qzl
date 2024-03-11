@@ -213,7 +213,7 @@ namespace Seamlex.Utilities
             // create an output file
             if(outputfile != "")
             {
-                sqldb.DataSetToExcelFile(sqldb.LastResult,outputfile);
+                // sqldb.DataSetToExcelFile(sqldb.LastResult,outputfile);
                 try
                 {
                     if(outputformat == "Microsoft.Data.Sqlite")
@@ -238,7 +238,16 @@ namespace Seamlex.Utilities
                     }
                     else if(outputformat == "Text")
                     {
-                        sqldb.DataSetToTextFile(sqldb.LastResult,outputfile);
+                        if(querymode == "Scalar")
+                        {
+                            sqldb.ValueToTextFile(sqldb.LastScalarResult,outputfile);
+                        }
+                        else
+                        {
+                            sqldb.DataSetToTextFile(sqldb.LastResult,outputfile);
+                        }
+
+
                     }
                 }
                 catch
@@ -298,7 +307,7 @@ namespace Seamlex.Utilities
                     console.Append($"Rows affected: {result}");
                 
                 if(result < 0)
-                    console.Append($"Error code: {result}");
+                    console.Append($"qzl result code: {result}");
             }
 
 
