@@ -21,10 +21,12 @@ When installed, the syntax for use is as follows:
     Options:
       -h|--help         Display help for each method.
     
-    Run 'qzl [operation] --help' for more information on a command.
+    Run 'qzl [operation] --help' for general information and a list of parameters for an operation.
+    
+    Run 'qzl [operation] [parameter] --help' for information on specific parameters.
 
 ## Installation
-This is an executable file that can be compiled into a shared folder with the syntax below.  Change to your directories.
+This is an executable file that can be compiled into a shared folder with the syntax below.  Change 'c:\SNJW\code\shared' to your directories.
     
     @echo ***************************************** 
     @echo Install qzl on win-x64 

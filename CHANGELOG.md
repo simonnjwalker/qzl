@@ -1,3 +1,10 @@
+## [1.0.4] - 2024-08-08
+### Fixed
+- Typo with qzl sql --formet 
+
+### Removed
+- Postgres and Oracle support is not implemented
+
 ## [1.0.3] - 2024-03-11
 ### Fixed
 - Output to a scalar (-m Scalar) now saves single value to a text file.

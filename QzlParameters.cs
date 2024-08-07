@@ -108,9 +108,9 @@ namespace Seamlex.Utilities
                     helptext.Add( "  -q|--query         SQL query.");
                     helptext.Add( "  -m|--method        SQL method (reader/scalar/nonquery).");
                     helptext.Add($"  -s|--source        Full path to a SQL query in a file.");
-                    helptext.Add($"  -f|--formet        Format of output (XML/SQL/XLSX).");
+                    helptext.Add($"  -f|--format        Format of output (XML/SQL/XLSX).");
                     helptext.Add($"  -o|--output        Full path to output file.");
-                    helptext.Add($"  -t|--type          Output type.");
+                    // helptext.Add($"  -t|--type          Output type.");
                     helptext.Add( "  -d|--dqchar        Character to replace with '\"' in query/connection string.");
                     helptext.Add( "  -v|--verbosity     Level of information displayed in console.");
                     load.Add(new ParameterSetting(){
@@ -121,14 +121,14 @@ namespace Seamlex.Utilities
                             helptext = new List<string>(){
                                 $"Usage: qzl {category} -p providername",
                                 "",
-                                "Specify the name of the SQL provider.  This must be one of the following:",
+                                "Specify the name of the provider/input type.  This must be one of the following:",
                                 "",
                                 "   ms mssql|SqlServer",
                                 "   my mysql|MySql",
-                                "   or oracle|Oracle",
+                                // "   or oracle|Oracle",
                                 "   od odbc|ODBC",
                                 "   sl sqllite|SQLlite",
-                                "   pg postgre|PostgreSQL",
+                                // "   pg pgsql|PostgreSQL",
                                 "   xl xlsx|XLSX|Excel",
                                 "   cv csv|CSV",
                                 "   xm xml|XML",
