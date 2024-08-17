@@ -34,6 +34,7 @@ namespace Seamlex.Utilities
         {
             QzlMain cg = new();
             // test
+            bool testaccess = false;
             bool testxlsx = false;
             bool testreader = false;
             bool testscalar = false;
@@ -42,11 +43,45 @@ namespace Seamlex.Utilities
 
              string source = @"C:\snjw\code\shared\qzl\nullsource2.db";
              string dboutput = @"C:\snjw\code\qzl\app.output.xlsx";
-             string dbsource = @"C:\snjw\code\qzl\app.db";
-
-
 
 // qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "users.csv"
+
+/*
+dotnet publish --configuration Release -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:CopyOutputSymbolsToPublishDirectory=false --self-contained
+
+cmdadmin
+
+xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\system32
+
+*/
+
+            if(testaccess)
+            {
+                // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+                cg.parameters.Clear();
+                cg.parameters.Add("sql");
+                cg.parameters.Add("-c");
+                cg.parameters.Add(@"C:\Users\seaml\OneDrive\learning\ED5985\AT3\testnames.accdb");
+
+                cg.parameters.Add("--source");
+                cg.parameters.Add(@"C:\Users\seaml\OneDrive\learning\ED5985\AT3\testnames.txt");
+
+
+                // cg.parameters.Add("-q");
+//                cg.parameters.Add(@"SELECT * FROM Student;");
+//                cg.parameters.Add(@"UPDATE Student SET FirstName ='Emma' WHERE UCASE(FirstName) = 'EMMA++';");
+                // cg.parameters.Add("-v");
+                // cg.parameters.Add("full");
+                // cg.parameters.Add("-o");
+                // cg.parameters.Add(@"C:\Users\seaml\OneDrive\learning\ED5985\AT3\student.csv");
+
+                // qzl sql -c "test.db" -q "SELECT COUNT(*) AS usrcount FROM Users WHERE Level=1 GROUP BY Level;"  -m Scalar
+                // cg.parameters.Add("-q");
+                // cg.parameters.Add("CREATE TABLE Users (Id TEXT);");
+                cg.Run();
+                return;
+            }
+
 
 
 

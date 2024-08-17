@@ -125,6 +125,7 @@ namespace Seamlex.Utilities
                                 "",
                                 "   ms mssql|SqlServer",
                                 "   my mysql|MySql",
+                                "   ma access|Access",
                                 // "   or oracle|Oracle",
                                 "   od odbc|ODBC",
                                 "   sl sqllite|SQLlite",

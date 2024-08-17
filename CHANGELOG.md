@@ -1,3 +1,11 @@
+## [1.0.5] - 2024-08-17
+### Added
+- MS Access support
+- Batch queries from .SQL files
+
+### Fixed
+- No error messages from data providers
+
 ## [1.0.4] - 2024-08-08
 ### Fixed
 - Typo with qzl sql --formet 

@@ -37,6 +37,7 @@ namespace Seamlex.Utilities
 
         private string currentverbosity = "Default";
         private string lasterror = "";
+        private string lastdberror = "";
         private string lastscalarresult = "";
         private int rowsaffected = -1;
         private System.Data.DataSet lastresult = new System.Data.DataSet();
@@ -121,6 +122,7 @@ namespace Seamlex.Utilities
 
                 case "sl":
                 case "sldb":
+                case ".db":
                 case "sqlite":
                 case "sqllite":
                 case "microsoft.data.sqlite":
@@ -145,6 +147,16 @@ namespace Seamlex.Utilities
                 case "odbc":
                 case "system.data.odbc":
                     output = "System.Data.Odbc";
+                break;
+
+                case "ma":
+                case "access":
+                case "mdb":
+                case ".mdb":
+                case ".accdb":
+                case "msaccess":
+                case "microsoft.access":
+                    output = "Microsoft.Access";
                 break;
 
                 case "xl":
@@ -334,6 +346,12 @@ namespace Seamlex.Utilities
             set { lasterror = value; }
         }
 
+        public string LastDbError
+        {
+            get { return lastdberror; }
+            set { lastdberror = value; }
+        }
+
         public string LastScalarResult
         {
             get { return lastscalarresult; }
@@ -421,7 +439,7 @@ namespace Seamlex.Utilities
             }
             else if (provider == "Microsoft.Data.Sqlite")
             {
-                output = this.TestOdbcConnection(connectionstring);
+                output = this.TestSqliteConnection(connectionstring);
             }
 
             return output;
@@ -504,16 +522,18 @@ namespace Seamlex.Utilities
                     Microsoft.Data.SqlClient.SqlCommand testcmd = new
                         Microsoft.Data.SqlClient.SqlCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     failnow = true;
                     output = "Test command could not be created";
                 }
 
                 //               Microsoft.Data.SqlClient.SqlCommand("select suburbName FROM suburb", testconn);
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 failnow = true;
                 output = "Connection string is invalid";
             }
@@ -530,8 +550,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 failnow = true;
                 output = "Cannot connect to this database";
             }
@@ -540,8 +561,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
             }
             return output;
         }
@@ -565,16 +587,18 @@ namespace Seamlex.Utilities
                     System.Data.Odbc.OdbcCommand testcmd = new
                        System.Data.Odbc.OdbcCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     failnow = true;
                     output = "Test command could not be created";
                 }
 
                 //               System.Data.SqlClient.SqlCommand("select suburbName FROM suburb", testconn);
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 failnow = true;
                 output = "Connection string is invalid";
             }
@@ -591,8 +615,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 failnow = true;
                 output = "Cannot connect to this database";
             }
@@ -601,8 +626,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
             }
             return output;
         }
@@ -620,16 +646,18 @@ namespace Seamlex.Utilities
                     MySql.Data.MySqlClient.MySqlCommand testcmd = new
                        MySql.Data.MySqlClient.MySqlCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     failnow = true;
                     output = "Test command could not be created";
                 }
 
                 //               System.Data.SqlClient.SqlCommand("select suburbName FROM suburb", testconn);
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 failnow = true;
                 output = "Connection string is invalid";
             }
@@ -646,8 +674,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 failnow = true;
                 output = "Cannot connect to this database";
             }
@@ -656,11 +685,73 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
             }
             return output;
         }
+
+        private string TestSqliteConnection(string connectionstring)
+        {
+            string output = "Test successful";
+            string testcommand = "SELECT * FROM sqlite_master WHERE 1 < 0";
+            bool failnow = false;
+            try
+            {
+                Microsoft.Data.Sqlite.SqliteConnection testconn = new Microsoft.Data.Sqlite.SqliteConnection(connectionstring);
+                try
+                {
+                    Microsoft.Data.Sqlite.SqliteCommand testcmd = new
+                       Microsoft.Data.Sqlite.SqliteCommand(testcommand, testconn);
+                }
+                catch (Exception e)
+                {
+                    this.lastdberror = e.Message;
+                    failnow = true;
+                    output = "Test command could not be created";
+                }
+
+                //               System.Data.SqlClient.SqlCommand("select suburbName FROM suburb", testconn);
+            }
+            catch (Exception e)
+            {
+                this.lastdberror = e.Message;
+                failnow = true;
+                output = "Connection string is invalid";
+            }
+
+            if (failnow == true)
+                return output;
+
+            Microsoft.Data.Sqlite.SqliteConnection conn = new Microsoft.Data.Sqlite.SqliteConnection(connectionstring);
+            Microsoft.Data.Sqlite.SqliteCommand cmd = new
+                Microsoft.Data.Sqlite.SqliteCommand(testcommand, conn);
+
+            try
+            {
+                cmd.Connection.Open();
+            }
+            catch (Exception e)
+            {
+                this.lastdberror = e.Message;
+                failnow = true;
+                output = "Cannot connect to this database";
+            }
+
+            try
+            {
+                cmd.Connection.Close();
+            }
+            catch (Exception e)
+            {
+                this.lastdberror = e.Message;
+            }
+            return output;
+        }
+
+
+        
 
         #endregion TestGenDbConnection
 
@@ -775,6 +866,27 @@ namespace Seamlex.Utilities
             //         output = this.QueryExecuteReaderSqlServerCompact(connectionstring, query);
             //     }
             // }
+            else if (providertype == "Microsoft.Access")
+            {
+                // if the connection-string is just a file, fix this before connecting using ODBC
+                // Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\myFolder\myAccessFile.accdb;Persist Security Info=False;
+                // Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\myFolder\myAccessFile.mdb;Persist Security Info=False;
+                if(System.IO.File.Exists(connectionstring))
+                    connectionstring = @"Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq="+connectionstring+";Exclusive=1;Uid=admin;Pwd=;";
+
+                if (querymode.Contains("Scalar"))
+                {
+                    output = this.QueryExecuteScalarOdbc(connectionstring, query);
+                }
+                else if (querymode.Contains("NonQuery"))
+                {
+                    output = this.QueryExecuteNonQueryOdbc(connectionstring, query);
+                }
+                else if (querymode.Contains("Reader"))
+                {
+                    output = this.QueryExecuteReaderOdbc(connectionstring, query);
+                }
+            }
             else if (providertype == "System.Data.Odbc")
             {
                 if (querymode.Contains("Scalar"))
@@ -848,13 +960,15 @@ namespace Seamlex.Utilities
                     Microsoft.Data.SqlClient.SqlCommand testcmd = new
                         Microsoft.Data.SqlClient.SqlCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -871,8 +985,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -4;
             }
 
@@ -883,8 +998,9 @@ namespace Seamlex.Utilities
                 output = da.Fill(this.lastresult);
                 this.rowsaffected = output;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -892,8 +1008,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
 
@@ -917,13 +1034,15 @@ namespace Seamlex.Utilities
                     Microsoft.Data.Sqlite.SqliteCommand testcmd = new
                         Microsoft.Data.Sqlite.SqliteCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -942,8 +1061,9 @@ namespace Seamlex.Utilities
                 output = (int)result;
                 this.rowsaffected = output;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -953,8 +1073,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
 
@@ -979,13 +1100,15 @@ namespace Seamlex.Utilities
                     Microsoft.Data.SqlClient.SqlCommand testcmd = new
                         Microsoft.Data.SqlClient.SqlCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -1001,17 +1124,20 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -4;
             }
 
             try
             {
                 output = cmd.ExecuteNonQuery();
+                this.RowsAffected = output;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -1021,8 +1147,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
             return output;
@@ -1050,13 +1177,15 @@ namespace Seamlex.Utilities
                     MySql.Data.MySqlClient.MySqlCommand testcmd = new
                         MySql.Data.MySqlClient.MySqlCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -1073,8 +1202,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -4;
             }
 
@@ -1083,10 +1213,11 @@ namespace Seamlex.Utilities
                 this.lastresult.Clear();
                 da.SelectCommand = cmd;
                 output = da.Fill(this.lastresult);
-                this.rowsaffected = output;
+                this.RowsAffected = output;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -1094,8 +1225,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
 
@@ -1108,8 +1240,7 @@ namespace Seamlex.Utilities
             int output = -1;
             string testcommand = query;
             //bool failnow = false;
-            this.rowsaffected = 0;
-
+            this.RowsAffected = 0;
 
             try
             {
@@ -1120,13 +1251,15 @@ namespace Seamlex.Utilities
                     MySql.Data.MySqlClient.MySqlCommand testcmd = new
                         MySql.Data.MySqlClient.MySqlCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -1142,8 +1275,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -4;
             }
 
@@ -1151,10 +1285,10 @@ namespace Seamlex.Utilities
             {
                 object result = cmd.ExecuteScalar();
                 output = (int)result;
-                this.rowsaffected = output;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -1164,8 +1298,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
             return output;
@@ -1176,7 +1311,7 @@ namespace Seamlex.Utilities
             int output = -1;
             string testcommand = query;
             //bool failnow = false;
-
+            this.RowsAffected = 0;
 
             try
             {
@@ -1187,13 +1322,15 @@ namespace Seamlex.Utilities
                     MySql.Data.MySqlClient.MySqlCommand testcmd = new
                         MySql.Data.MySqlClient.MySqlCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -1209,17 +1346,20 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -4;
             }
 
             try
             {
                 output = cmd.ExecuteNonQuery();
+                this.RowsAffected = output;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -1229,8 +1369,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
             return output;
@@ -1245,6 +1386,7 @@ namespace Seamlex.Utilities
         {
             int output = -1;
             string testcommand = query;
+            this.RowsAffected = 0;
             //bool failnow = false;
 
             try
@@ -1256,15 +1398,20 @@ namespace Seamlex.Utilities
                     System.Data.Odbc.OdbcCommand testcmd = new
                         System.Data.Odbc.OdbcCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
+                testconn.Close();
+                GC.Collect();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
+
 
             if (output == -2 || output == -3)
                 return output;
@@ -1279,8 +1426,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -4;
             }
 
@@ -1289,10 +1437,11 @@ namespace Seamlex.Utilities
                 this.lastresult.Clear();
                 da.SelectCommand = cmd;
                 output = da.Fill(this.lastresult);
-                this.rowsaffected = output;
+                this.RowsAffected = output;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -1300,8 +1449,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
 
@@ -1313,8 +1463,7 @@ namespace Seamlex.Utilities
         {
             int output = -1;
             string testcommand = query;
-            //bool failnow = false;
-            this.rowsaffected = 0;
+            this.RowsAffected = 0;
 
             try
             {
@@ -1325,13 +1474,15 @@ namespace Seamlex.Utilities
                     System.Data.Odbc.OdbcCommand testcmd = new
                         System.Data.Odbc.OdbcCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -1356,10 +1507,11 @@ namespace Seamlex.Utilities
             {
                 object result = cmd.ExecuteScalar();
                 output = (int)result;
-                this.rowsaffected = output;
+                this.RowsAffected = 1;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -1367,8 +1519,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
             return output;
@@ -1378,25 +1531,27 @@ namespace Seamlex.Utilities
         {
             int output = -1;
             string testcommand = query;
-            //bool failnow = false;
-
+            this.RowsAffected = 0;
 
             try
             {
-
                 System.Data.Odbc.OdbcConnection testconn = new System.Data.Odbc.OdbcConnection(connectionstring);
                 try
                 {
                     System.Data.Odbc.OdbcCommand testcmd = new
                         System.Data.Odbc.OdbcCommand(testcommand, testconn);
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -3;
                 }
+                testconn.Close();
+                GC.Collect(); 
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -1412,17 +1567,20 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Open();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -4;
             }
 
             try
             {
                 output = cmd.ExecuteNonQuery();
+                this.RowsAffected = output;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -5;
             }
 
@@ -1432,8 +1590,9 @@ namespace Seamlex.Utilities
             {
                 cmd.Connection.Close();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -6;
             }
             return output;
@@ -1446,6 +1605,7 @@ namespace Seamlex.Utilities
         private int QueryExecuteNonQuerySqlLite(string connectionstring, string query)
         {
             int output = -1;
+            this.RowsAffected = 0;
 
             // get the file name if there is one - add this in if not
             string filename = connectionstring;
@@ -1465,9 +1625,11 @@ namespace Seamlex.Utilities
                         Microsoft.Data.Sqlite.SqliteConnection conn = new("Data Source="+filename+";");
                         conn.Open();
                         conn.Close();
+                        GC.Collect();
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        this.lastdberror = e.Message;
                         this.LastError=$"SQLite file '{filename}' cannot be created.";
                         return -2;
                     }
@@ -1491,19 +1653,21 @@ namespace Seamlex.Utilities
                     // SqLiteDataAdapter da = new();
 
                     output = cmd.ExecuteNonQuery();
+                    this.RowsAffected = output;
 
                 }
 
-
                 conn.Close();
+                GC.Collect();
                 // this.LastResult=ds;
                 // this.SetTableNames();
                 // output = ds.Tables[0].Rows.Count;
                 // return output;                
 
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 this.LastError=$"Cannot execute SQLite query '{query}' on '{filename}'.";
                 output = -2;
             }
@@ -1517,8 +1681,9 @@ namespace Seamlex.Utilities
                         GC.Collect();
                         File.Delete(filename);
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        this.lastdberror = e.Message;
 //                        this.LastError=$"Error initialising file '{filename}'.";
                     }
                 }
@@ -1620,6 +1785,7 @@ namespace Seamlex.Utilities
             if(connectionstring.ToLower().StartsWith("data source="))
                 filename = connectionstring.Split('=',StringSplitOptions.None)[1].TrimEnd(';');
 
+            this.RowsAffected = 0;
             int output = -1;
             System.Data.DataSet ds = new();
             string error = "";
@@ -1652,8 +1818,9 @@ namespace Seamlex.Utilities
                 this.SetTableNames();
 
             }
-            catch(Exception e)
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 // "SQLite Error 14: 'unable to open database file'."
                 error = e.Message;
                 if(error.Contains("'unable to open database file'"))
@@ -1667,6 +1834,7 @@ namespace Seamlex.Utilities
             }
 
             output = ds.Tables[0].Rows.Count;
+            this.RowsAffected = output;
             return output;
         }
 
@@ -1677,6 +1845,7 @@ namespace Seamlex.Utilities
             if(connectionstring.ToLower().StartsWith("data source="))
                 filename = connectionstring.Split('=',StringSplitOptions.None)[1].TrimEnd(';');
             string error = "";
+            this.RowsAffected = 0;
 
             Microsoft.Data.Sqlite.SqliteConnection conn;
             try
@@ -1696,14 +1865,16 @@ namespace Seamlex.Utilities
                 output = Int32.Parse("0" + new string((result ?? "0").ToString().Where(char.IsDigit).ToArray()));
                 this.LastScalarResult = (result ?? "").ToString();
                 conn.Close();
+                this.RowsAffected = 1;
                 // this.LastResult=ds;
                 // this.SetTableNames();
                 // output = ds.Tables[0].Rows.Count;
                 // return output;
 
             }
-            catch(Exception e)
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 // "SQLite Error 14: 'unable to open database file'."
                 error = e.Message;
                 if(error.Contains("'unable to open database file'"))
@@ -1754,6 +1925,7 @@ namespace Seamlex.Utilities
 
 
             int output = -1;
+            this.RowsAffected = 0;
 
             // this displays the last error (if any)
             var xlsx = new Seamlex.Utilities.ExcelToData();
@@ -1769,8 +1941,9 @@ namespace Seamlex.Utilities
                     {
                         xlsx.ToExcelFile(new DataSet(),sourcefile);
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        this.lastdberror = e.Message;
                         this.LastError=$"Excel file '{sourcefile}' cannot be created.";
                         return -2;
                     }
@@ -1864,6 +2037,7 @@ namespace Seamlex.Utilities
                 if(tablename!= "")
                     dt.TableName = tablename;
                 output = dt.Rows.Count;
+                this.RowsAffected = output;
             }
             else if(querymode == "Scalar" || querymode == "NonQuery")
             {
@@ -1898,6 +2072,7 @@ namespace Seamlex.Utilities
             if(querymode == "NonQuery")
             {
                 // need to see whether this exists already in the output
+                int rowCount = 0;
 
 
                 if(tablename == "")
@@ -1919,6 +2094,7 @@ namespace Seamlex.Utilities
                         foreach (DataRow row in sourcetable.Rows)
                         {
                             newTable.ImportRow(row);
+                            rowCount++;
                         }
 
                         // Add the new table to the destination DataSet
@@ -1928,6 +2104,7 @@ namespace Seamlex.Utilities
                 }
                 if(!tableadded)
                     ds.Tables.Add(dt);
+                this.RowsAffected = rowCount;
             }
 
             if(querymode=="Scalar")
@@ -1939,6 +2116,7 @@ namespace Seamlex.Utilities
                             scalarResult = (lastresult.Tables[0].Rows[0].ItemArray[0] ?? "").ToString();
                 this.LastScalarResult = scalarResult;
                 ds.Tables.Add(dt);
+                this.RowsAffected = 1;
             }
 
             if(querymode=="Reader")
@@ -2003,7 +2181,6 @@ namespace Seamlex.Utilities
             }
 
             this.SetTableNames();
-            this.RowsAffected = output;
             return output;
         }
 
@@ -2172,6 +2349,7 @@ namespace Seamlex.Utilities
         private int QueryExecuteReaderCsv(string connectionstring, string query)
         {
             int output = -1;
+            this.RowsAffected = 0;
 
             // for XLSX, the 
 
@@ -2202,6 +2380,8 @@ namespace Seamlex.Utilities
             this.LastResult=ds;
             this.SetTableNames();
             output = ds.Tables[0].Rows.Count;
+            this.RowsAffected = output;
+
             return output;
         }
 
@@ -2209,6 +2389,8 @@ namespace Seamlex.Utilities
         {
             // this needs completing - will not work as intended
             int output = -1;
+            this.RowsAffected = 0;
+
             Microsoft.Data.Sqlite.SqliteConnection conn;
             try
             {
@@ -2230,11 +2412,13 @@ namespace Seamlex.Utilities
                 // this.SetTableNames();
                 // output = ds.Tables[0].Rows.Count;
                 // return output;
+                this.RowsAffected = 1;
 
 
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -2268,10 +2452,12 @@ namespace Seamlex.Utilities
                 // this.SetTableNames();
                 // output = ds.Tables[0].Rows.Count;
                 // return output;                
+                this.RowsAffected = output;
 
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
             }
 
@@ -2482,6 +2668,10 @@ namespace Seamlex.Utilities
                 return "Microsoft.Data.Sqlite";
             if(connString.ToLower().Trim().TrimEnd(';').EndsWith(".db"))
                 return "Microsoft.Data.Sqlite";
+            if(connString.ToLower().Trim().TrimEnd(';').EndsWith(".accdb"))
+                return "Microsoft.Access";
+            if(connString.ToLower().Trim().TrimEnd(';').EndsWith(".mdb"))
+                return "Microsoft.Access";
             if(connString.ToLower().TrimEnd(';').EndsWith(".xlsx"))
                 return "Microsoft.Excel";
             if(connString.ToLower().TrimEnd(';').EndsWith(".csv"))
@@ -2592,8 +2782,9 @@ namespace Seamlex.Utilities
                     System.IO.File.Delete(filename);
                     GC.Collect();
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -2;
                     this.LastError = $"Cannot delete existing '{filename}' file.";
                 }
@@ -2607,8 +2798,9 @@ namespace Seamlex.Utilities
                 GC.Collect();
                 output = 1;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
                 this.LastError = $"Cannot create Sqlite file '{filename}'.";
             }
@@ -2626,8 +2818,9 @@ namespace Seamlex.Utilities
                     GC.Collect();
                     output = 1;
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -2;
                     this.LastError = $"Cannot delete existing '{filename}' file.";
                 }
@@ -2643,8 +2836,9 @@ namespace Seamlex.Utilities
                 // System.IO.File.WriteAllText(filename,Newtonsoft.Json.JsonConverter() ds.ToString());
                 GC.Collect();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
                 this.LastError = $"Cannot fill '{filename}' with dataset.";
             }
@@ -2661,8 +2855,9 @@ namespace Seamlex.Utilities
                     GC.Collect();
                     output = 1;
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -2;
                     this.LastError = $"Cannot delete existing '{filename}' file.";
                 }
@@ -2675,8 +2870,9 @@ namespace Seamlex.Utilities
                 ds.WriteXml(filename);
                 GC.Collect();
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
                 this.LastError = $"Cannot fill '{filename}' with dataset.";
             }
@@ -2691,8 +2887,9 @@ namespace Seamlex.Utilities
                 xslxds.ToCsvFile(ds,filename);
                 output = 1;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
                 this.LastError = $"Cannot create CSV file '{filename}'.";
             }
@@ -2708,8 +2905,9 @@ namespace Seamlex.Utilities
                     System.IO.File.Delete(filename);
                     GC.Collect();
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -2;
                     this.LastError = $"Cannot overwrite '{filename}' with new text file.";
                 }
@@ -2723,8 +2921,9 @@ namespace Seamlex.Utilities
                 GC.Collect();
                 output = 1;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
                 this.LastError = $"Cannot fill '{filename}' with dataset.";
             }
@@ -2740,8 +2939,9 @@ namespace Seamlex.Utilities
                     System.IO.File.Delete(filename);
                     GC.Collect();
                 }
-                catch
+                catch (Exception e)
                 {
+                    this.lastdberror = e.Message;
                     output = -2;
                     this.LastError = $"Cannot overwrite '{filename}' with new text file.";
                 }
@@ -2755,8 +2955,9 @@ namespace Seamlex.Utilities
                 GC.Collect();
                 output = 1;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
                 this.LastError = $"Cannot fill '{filename}' with dataset.";
             }
@@ -2772,17 +2973,53 @@ namespace Seamlex.Utilities
                 xslxds.ToExcelFile(ds,filename);
                 output = 1;
             }
-            catch
+            catch (Exception e)
             {
+                this.lastdberror = e.Message;
                 output = -2;
                 this.LastError = $"Cannot create XLSX file '{filename}'.";
             }
             return output;                
         }
 
+        internal string GetExplanation(int result)
+        {
 
+        /// If creating a connection fails, output = -2, will not continue
+        /// If creating the command fails, output = -3, will not continue execution of query and will try and close if appropriate
+        /// If opening the connection fails, output = -4, will not continue
+        /// If executing the query fails, output = -5, will continue to try and close
+        /// If executing the query succeeds, the number of rows affected is stored to output and to this.rowsaffected
+        /// If the connection cannot be closed, output = -6 but this.rowsaffected remains populated
 
-    #endregion QueryExecuteGenDb
+            if(result == 1 || result == 0)
+            {
+                return "The operation completed successfully.";
+            }
+            else if(result == -1)
+            {
+                return "The operation could not complete due to an initial connection or access issue.";
+            }
+            else if(result == -2)
+            {
+                return "The operation could not complete due to an initial connection or access issue.";
+            }
+            else if(result == -3)
+            {
+                return "The operation could not create the command or query.";
+            }
+            else if(result == -4)
+            {
+                return "The operation could not open a database connection.";
+            }
+            else if(result == -5)
+            {
+                return "The operation could not execute the query.";
+            }
+            return "";
+        }
+
+        #endregion QueryExecuteGenDb
 
     }
 

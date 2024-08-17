@@ -53,6 +53,8 @@ namespace Seamlex.Utilities
                         output.category = checkvalue.category.Trim().ToLower();
                 }
             }
+
+            output.verbosity = ToProper(output.verbosity);
             mv = output;
             return true;
         }
@@ -150,6 +152,75 @@ namespace Seamlex.Utilities
 
             */
 
+            // if there is a .SQL file to be executed, this is done command-by-command
+            List<string> consoleItems = new();
+            if(source.source != "")
+            {
+                // open this and try to get the line-by-line SQL commands
+                string fileText = "";
+                string errorText = "";
+                string errorFullText = "";
+                if(System.IO.File.Exists(source.source))
+                {
+                    try
+                    {
+                        fileText = System.IO.File.ReadAllText(source.source);
+                    }
+                    catch(Exception e)
+                    {
+                        errorText = $"Cannot open file '{source.source}'";
+                        errorFullText = e.Message;
+                    }
+                }
+                else
+                {
+                    errorText = $"File '{source.source}' does not exist";
+                }
+
+                if(fileText =="")
+                    errorText = $"File '{source.source}' is empty";
+
+                if(errorText =="")
+                {
+                    // try to split the 
+                    var sqlCommands = this.SplitSqlCommands(fileText);
+                    foreach(string sqlText in sqlCommands)
+                    {
+                        if(sqlText.Trim() != "")
+                        {
+                            QzlGenInfo thisSource = 
+                                new QzlGenInfo()
+                                {
+                                    output = source.output,
+                                    format = source.format,
+                                    source = "",
+                                    provider = source.provider,
+                                    query = sqlText,
+                                    connection = source.connection,
+                                    method = source.method,
+                                    verbosity = source.verbosity,
+                                    dqchar = source.dqchar
+                                };
+
+                            QzlGen qzlGen = new();
+                            qzlGen.SqlAction(thisSource);
+                            consoleItems.Add(qzlGen.lastmessage);
+                        }
+                    }
+                    foreach(string consoleMessage in consoleItems)
+                        this.lastmessage += Environment.NewLine + consoleMessage;
+                }
+                else
+                {
+                    if( source.verbosity == "Default" || source.verbosity == "Full" )
+                    {
+                        this.lastmessage = errorText.ToString();
+                        if(source.verbosity == "Full" && errorFullText !="")
+                            this.lastmessage += Environment.NewLine + errorFullText;
+                    }
+                }
+                return true;
+            }
 
             OmniDb sqldb = new();
             sqldb.CurrentConnectionString = source.connection;
@@ -209,7 +280,7 @@ namespace Seamlex.Utilities
                 return false;
             }
 
- 
+
             // create an output file
             if(outputfile != "")
             {
@@ -246,8 +317,6 @@ namespace Seamlex.Utilities
                         {
                             sqldb.DataSetToTextFile(sqldb.LastResult,outputfile);
                         }
-
-
                     }
                 }
                 catch
@@ -265,8 +334,13 @@ namespace Seamlex.Utilities
             if(result >= -1)
                 result = sqldb.RowsAffected;
 
+
             // console output
             StringBuilder console = new();
+            if(verbosity == "Full" )
+                console.AppendLine(sqldb.CurrentQuery);
+
+
             if(querymode == "Reader" && ( verbosity == "Default" || verbosity == "Full" ) )
             {
                 int maxLines = 10;
@@ -303,11 +377,23 @@ namespace Seamlex.Utilities
                 if(result >= -1 && verbosity == "Full")
                     console.Append("The operation completed successfully.  ");
                 
-                if(result >= 0)
-                    console.Append($"Rows affected: {result}");
-                
-                if(result < 0)
-                    console.Append($"qzl result code: {result}");
+            }
+
+            if(result < -1 && ( verbosity == "Default" || verbosity == "Full" ) )
+            {
+                string explanation = sqldb.GetExplanation(result);
+                console.AppendLine($"qzl result code: {result}");
+                console.AppendLine(explanation);
+            }
+
+            if(result >= -1 && ( verbosity == "Default" || verbosity == "Full" ) )
+                console.AppendLine($"Rows affected: {result}");
+
+            if(verbosity == "Full" && sqldb.LastDbError != "")
+            {
+                console.AppendLine($" ");
+                console.AppendLine($"Last DB error:");
+                console.AppendLine(sqldb.LastDbError);
             }
 
 
@@ -316,26 +402,24 @@ namespace Seamlex.Utilities
 none      No console output.
 errors    Error messages only.
 default   NonQuery: 'Rows affected: n'
-          Scalar:   'n'
-          Reader:   'Rows affected: n'
+        Scalar:   'n'
+        Reader:   'Rows affected: n'
                     'Table1'
                     'Column1[|Column2][|Column3][..]' {max 200 chars}
                     '[Row1Item1[|Row1Item2][|Row1Item3][..]] {max 200 chars}
                     '[Row2Item1[|Row2Item2][|Row2Item3][..]] {max 200 chars}
                     '{max 20 rows}
 full      NonQuery: 'Rows affected: n'
-          Scalar:   'n'
-          Reader:   'Rows affected: n'
+        Scalar:   'n'
+        Reader:   'Rows affected: n'
                     'Table1'
                     'Column1[|Column2][|Column3][..]'
                     '[Row1Item1[|Row1Item2][|Row1Item3][..]]
                     '[Row2Item1[|Row2Item2][|Row2Item3][..]]"
 
 */
-
-
-
             this.lastmessage = console.ToString();
+        
 
             return true;
         }
@@ -565,6 +649,92 @@ full      NonQuery: 'Rows affected: n'
             return "XML";
         }
 
+//         public string[] GetSqlSplit(string sqlText)
+//         {
+// //            String input = "select * from table1 where col1 = 'abc;de'; select * from table2;";
+//             var regex = new System.Text.RegularExpressions.Regex(@"(?<=;)\s*(?=(?:[^\""'`]*[\""'`]){0,1}[^\""'`]*$)");
+
+//             // Regex.Split(sql, @"(?<=;)\s*(?=(?:[^\""'`]*[\""'`]){0,1}[^\""'`]*$)");
+
+//             return regex.Split(sqlText);
+      
+//         }
+
+        public List<string> SplitSqlCommands(string sqlContent)
+        {
+            List<string> sqlCommands = new List<string>();
+            StringBuilder currentCommand = new StringBuilder();
+            bool inSingleLineComment = false;
+            bool inMultiLineComment = false;
+            bool inString = false;
+            char stringDelimiter = '\0';
+
+            for (int i = 0; i < sqlContent.Length; i++)
+            {
+                char currentChar = sqlContent[i];
+                char nextChar = i < sqlContent.Length - 1 ? sqlContent[i + 1] : '\0';
+
+                if (inSingleLineComment)
+                {
+                    if (currentChar == '\n')
+                    {
+                        inSingleLineComment = false;
+                    }
+                }
+                else if (inMultiLineComment)
+                {
+                    if (currentChar == '*' && nextChar == '/')
+                    {
+                        inMultiLineComment = false;
+                        i++; // Skip the '/'
+                    }
+                }
+                else if (inString)
+                {
+                    if (currentChar == stringDelimiter && sqlContent[i - 1] != '\\')
+                    {
+                        inString = false;
+                    }
+                }
+                else
+                {
+                    if (currentChar == '-' && nextChar == '-')
+                    {
+                        inSingleLineComment = true;
+                        i++; // Skip the second '-'
+                    }
+                    else if (currentChar == '/' && nextChar == '*')
+                    {
+                        inMultiLineComment = true;
+                        i++; // Skip the '*'
+                    }
+                    else if (currentChar == '\'' || currentChar == '\"')
+                    {
+                        inString = true;
+                        stringDelimiter = currentChar;
+                    }
+                    else if (currentChar == ';')
+                    {
+                        sqlCommands.Add(currentCommand.ToString().Trim());
+                        currentCommand.Clear();
+                        continue;
+                    }
+                }
+
+                if (!inSingleLineComment && !inMultiLineComment)
+                {
+                    currentCommand.Append(currentChar);
+                }
+            }
+
+            // Add any remaining command after the last semicolon
+            if (currentCommand.Length > 0)
+            {
+                sqlCommands.Add(currentCommand.ToString().Trim());
+            }
+
+            return sqlCommands;
+        }
 
 #endregion general-helper-methods
     }

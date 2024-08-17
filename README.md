@@ -58,7 +58,18 @@ This is an executable file that can be compiled into a shared folder with the sy
     qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "test.xlsx" 
     qzl sql -c "test.db" -q "SELECT COUNT(*) AS usrcount FROM Users WHERE Level=1 GROUP BY Level;" -o "result.txt" -m Scalar
     qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "users.csv"
-    
+
+
+    @echo Alternatively build as a single EXE
+
+    dotnet publish --configuration Release -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:CopyOutputSymbolsToPublishDirectory=false --self-contained
+
+    @echo Requires system admin rights
+
+    xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\system32
+
+
+
 ## Sample code
 
 ### Create a new Excel file
