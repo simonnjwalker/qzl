@@ -60,11 +60,14 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
                 // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
                 cg.parameters.Clear();
                 cg.parameters.Add("sql");
-                cg.parameters.Add("-c");
-                cg.parameters.Add(@"C:\Users\seaml\OneDrive\learning\ED5985\AT3\testnames.accdb");
-
+                cg.parameters.Add("-q");
+                cg.parameters.Add(@"SELECT QCEStudentT.EQID, QCEStudentT.Year_Level, QCEStudentT.QCERisk, QCEStudentT.Preferred_Last_Name, QCEStudentT.Preferred_First_Name, QCEStudentT.Last_Name, QCEStudentT.First_Name, QCEStudentT.Enrolment_Status,  QCEStudentT.MonitoredBy FROM QCEStudentT WHERE EQID='7709685374K'");
                 cg.parameters.Add("--source");
-                cg.parameters.Add(@"C:\Users\seaml\OneDrive\learning\ED5985\AT3\testnames.txt");
+                cg.parameters.Add(@"C:\snjw\code\pshs\ar23.accdb");
+                cg.parameters.Add("-o");
+                cg.parameters.Add(@"C:\snjw\code\pshs\student.csv");
+                cg.parameters.Add("-v");
+                cg.parameters.Add(@"full");
 
 
                 // cg.parameters.Add("-q");
@@ -91,11 +94,19 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
                 cg.parameters.Clear();
                 cg.parameters.Add("sql");
                 cg.parameters.Add("-c");
-                cg.parameters.Add(@"C:\snjw\code\shared\qzl\test.db");
+                cg.parameters.Add(@"C:\temp\source.xlsx");
                 cg.parameters.Add("-q");
-                cg.parameters.Add(@"SELECT * FROM Users;");
-                cg.parameters.Add("-o");
-                cg.parameters.Add(@"C:\snjw\code\shared\qzl\users.csv");
+                cg.parameters.Add(@"CREATE TABLE Users (Id TEXT, Name TEXT, Code TEXT);");
+                // cg.parameters.Add("-o");
+                // cg.parameters.Add(@"C:\snjw\code\shared\qzl\users.csv");
+
+//c:\snjw\code\qzl>qzl sql -c "C:\temp\source.xlsx" -q "CREATE TABLE Users (Id TEXT, Name TEXT, Code TEXT);"
+//Rows affected: 0
+
+//qzl sql -c "C:\temp\source.xlsx" -q "INSERT INTO Users (Id, Name, Code) VALUES (1, 'Simon', 'SWAL007');"
+//SQLite Error 1: 'no such table: Users'.
+
+
 
                 // qzl sql -c "test.db" -q "SELECT COUNT(*) AS usrcount FROM Users WHERE Level=1 GROUP BY Level;"  -m Scalar
                 // cg.parameters.Add("-q");

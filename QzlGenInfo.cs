@@ -30,6 +30,7 @@ namespace Seamlex.Utilities
         public string method {get;set;} = "";  // SQL query method
         public string verbosity {get;set;} = "";  // console output verbosity
         public string dqchar {get;set;} = "";
+        public bool noheuristic {get;set;} = false;
 
     }
 }

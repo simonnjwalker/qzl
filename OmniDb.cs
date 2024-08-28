@@ -1937,9 +1937,14 @@ namespace Seamlex.Utilities
                 // if the database file does not exist and the query is either blank or create table then create it
                 if(query == "" || IsCreateTableQuery(query))
                 {
+                    var newds = new DataSet();
+                    var newdt = CreateDataTableFromSql(query);
+                    newdt.TableName = GuessTableName(query);
+                    newds.Tables.Add(newdt);
+                    
                     try
                     {
-                        xlsx.ToExcelFile(new DataSet(),sourcefile);
+                        xlsx.ToExcelFile(newds,sourcefile);
                     }
                     catch (Exception e)
                     {
@@ -1947,6 +1952,9 @@ namespace Seamlex.Utilities
                         this.LastError=$"Excel file '{sourcefile}' cannot be created.";
                         return -2;
                     }
+                    GC.Collect();
+                    this.LastResult=newds;
+                    return 0;
                 }
                 else
                 {
@@ -2341,6 +2349,73 @@ namespace Seamlex.Utilities
 
         //     // return output;
         // }
+
+
+
+
+        static DataTable CreateDataTableFromSql(string sqlQuery)
+        {
+            // Initialize a new DataTable
+            DataTable dataTable = new DataTable();
+
+            // Find the start and end of the column definitions
+            int startIndex = sqlQuery.IndexOf('(');
+            int endIndex = sqlQuery.LastIndexOf(')');
+
+            if (startIndex != -1 && endIndex != -1 && endIndex > startIndex)
+            {
+                // Extract the column definitions part of the query
+                string columnsPart = sqlQuery.Substring(startIndex + 1, endIndex - startIndex - 1);
+
+                // Split the columns part by commas to separate individual column definitions
+                string[] columns = SplitSqlColumns(columnsPart);
+
+                // Loop through each column definition
+                foreach (string column in columns)
+                {
+                    // Extract the column name by trimming whitespace and taking the first word
+                    string columnName = column.Trim().Split(' ')[0];
+
+                    // Add the column to the DataTable with data type as string
+                    dataTable.Columns.Add(columnName, typeof(string));
+                }
+            }
+
+            return dataTable;
+        }
+
+        static string[] SplitSqlColumns(string columnsPart)
+        {
+            // Split columns by commas while ignoring commas inside parentheses
+            var columns = new List<string>();
+            int parenthesisCount = 0;
+            int startIndex = 0;
+
+            for (int i = 0; i < columnsPart.Length; i++)
+            {
+                if (columnsPart[i] == '(')
+                {
+                    parenthesisCount++;
+                }
+                else if (columnsPart[i] == ')')
+                {
+                    parenthesisCount--;
+                }
+                else if (columnsPart[i] == ',' && parenthesisCount == 0)
+                {
+                    // Add the column definition when a comma is found outside parentheses
+                    columns.Add(columnsPart.Substring(startIndex, i - startIndex).Trim());
+                    startIndex = i + 1;
+                }
+            }
+
+            // Add the last column definition
+            columns.Add(columnsPart.Substring(startIndex).Trim());
+
+            return columns.ToArray();
+        }
+
+
 
 #endregion excel
 

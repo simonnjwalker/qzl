@@ -1,3 +1,8 @@
+## [1.0.6] - 2024-08-29
+### Added
+- Best guess from few parameters (heuristics) 
+- Suppress guessing with -nh|noheuristic parameter
+
 ## [1.0.5] - 2024-08-17
 ### Added
 - MS Access support

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using DocumentFormat.OpenXml.Features;
 using Seamlex.Utilities;
 #pragma warning disable CS8602, CS8600, CS0219
 namespace Seamlex.Utilities
@@ -154,7 +155,7 @@ namespace Seamlex.Utilities
 
             // if there is a .SQL file to be executed, this is done command-by-command
             List<string> consoleItems = new();
-            if(source.source != "")
+            if(source.source != "" && Path.GetExtension(source.source).ToLower() == ".sql" )
             {
                 // open this and try to get the line-by-line SQL commands
                 string fileText = "";
@@ -222,6 +223,9 @@ namespace Seamlex.Utilities
                 return true;
             }
 
+            if(!source.noheuristic)
+                this.ApplyHeuristics(source);
+
             OmniDb sqldb = new();
             sqldb.CurrentConnectionString = source.connection;
             sqldb.CurrentProvider  = source.provider;
@@ -238,21 +242,10 @@ namespace Seamlex.Utilities
             string outputfile = source.output;
             string outputformat = source.format;
 
-            if(querymode == "Default")
-                querymode = sqldb.GuessQueryMethod(sqldb.CurrentQuery);
-            if(provider == "Default")
-                provider = sqldb.GuessProvider(sqldb.CurrentConnectionString);
 
 
-            // if the input is Excel and no output is specified
-            // then overwrite the source file ONLY if a nonquery and is either Default or specified
-            if(provider == "Microsoft.Excel" && querymode == "NonQuery" && outputfile == "" && outputformat != "None")
-                outputfile = source.connection;
 
-            if(outputformat == "" && outputfile == "")
-                outputformat = "None";
-            if(outputformat == "" || outputformat == "Default")
-                outputformat = this.GuessOutputFormat(outputfile);
+
 
             int result = -1;
             try
@@ -424,182 +417,296 @@ full      NonQuery: 'Rows affected: n'
             return true;
         }
 
+        private void ApplyHeuristics(QzlGenInfo source)
+        {
+            // use the following rules
+
+            // 1 - if there is a query + provider + connection, no guesses are made
+            if(source.query != "" && source.provider != "" && source.connection != "")
+                return;
+
+
+            // 2 - if there is no provider but either connection or source
+            //     then guess based on the file extension or connection-string
+            if(     (
+                        source.provider == "" || source.provider == "Default"
+                    )
+                    &&
+                    (
+                        !(source.connection == "" || source.connection == "Default")
+                        ||
+                        !(source.source == "" || source.source == "Default")
+                    )
+            )
+            {
+                // if the file exists, use it
+                string fileCheck = source.connection;
+                string fileExt = Path.GetExtension(source.connection).ToLower();
+                string workingDir = System.Environment.CurrentDirectory;
+                bool isFile = false;
+
+                // guess the provider from file extension
+                if(fileExt == ".txt" || fileExt == ".accdb"  || fileExt == ".mdb"  || fileExt == ".db" || fileExt == ".csv" || fileExt == ".xslx" )
+                    isFile = true;
+
+                if(!isFile)
+                {
+                    // check the 'source' parameter 
+                    fileCheck = source.source;
+                    fileExt = Path.GetExtension(source.source).ToLower();
+                    if(fileExt == ".txt" || fileExt == ".accdb"  || fileExt == ".mdb"  || fileExt == ".db" || fileExt == ".csv" || fileExt == ".xslx" )
+                        isFile = true;
+                }
+
+                if(isFile)
+                {
+                    // determine whether this exists
+                    isFile = File.Exists(fileCheck);
+                    if(!isFile)
+                    {
+                        isFile = File.Exists(Path.Combine(workingDir,fileCheck));
+                        if(isFile)
+                            fileCheck = Path.Combine(workingDir,fileCheck);
+                    }
+                }
+
+                if(isFile)
+                {
+                    // this exists, create a 'real' connection based on the extension type
+                    if(fileExt == ".txt" )
+                    {
+                        source.provider = "Text";
+                        source.connection = fileCheck;
+                        source.source = "";
+                    }
+                    else if(fileExt == ".csv" )
+                    {
+                        source.provider = "CSV";
+                        source.connection = fileCheck;
+                        source.source = "";
+                    }
+                    else if(fileExt == ".xlsx")
+                    {
+                        source.provider = "Microsoft.Excel";
+                        source.connection = fileCheck;
+                        source.source = "";
+                    }
+                    else if(fileExt == ".accdb" || fileExt == ".mdb")
+                    {
+                        source.provider = "Microsoft.Access";
+                        source.connection = @"Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq="+fileCheck+";Exclusive=1;Uid=admin;Pwd=;";;
+                        source.source = "";
+                    }
+                    else if(fileExt == ".db")
+                    {
+                        source.provider = "Microsoft.Data.Sqlite";
+                        source.connection = @$"Data Source="+fileCheck+";";
+                        source.source = "";
+                    }
+                }
+            }
+        
+
+
+            // 3 - if there no connection and no source
+            //     then we can check the provider
+            //     3a - if the provider is non-empty and file-based we can determine the file type
+            //     3b - if the provider is empty and file-based we can determine the file type
+            //     3c - then we check the current directory for files either of the specified type or any type 
+
+            if(
+                (source.connection == "" || source.connection == "Default")
+                &&
+                (source.source == "" || source.source == "Default")
+            )
+            {
+
+                string currentDirectory = Directory.GetCurrentDirectory();
+
+                // If the list of extensions is empty, use default types
+                List<string> uniqueFiles = GetFilesWithUniqueExtensions(currentDirectory);
+
+                List<string> extensions = new();
+                if(source.provider == "" || source.provider == "Default")
+                {
+                    // the order here is the preference for files
+                    // that is, if there is a .db file then this will be used first
+                    extensions = new List<string> { ".db", ".accdb", ".mdb", ".xlsx", ".csv", ".txt" };
+                }
+                else
+                {
+                    if(source.provider == "Text")
+                    {
+                        extensions.Add(".txt");
+                    }
+                    else if(source.provider == "CSV")
+                    {
+                        extensions.Add(".csv");
+                    }
+                    else if(source.provider == "Microsoft.Excel")
+                    {
+                        extensions.Add(".xlsx");
+                    }
+                    else if(source.provider == "Microsoft.Access")
+                    {
+                        extensions.Add(".accdb");
+                        extensions.Add(".mdb");
+                    }
+                    else if(source.provider == "Microsoft.Data.Sqlite")
+                    {
+                        extensions.Add(".db");
+                    }
+                }
+
+                string fileName = "";
+                string providerName = "";
+                foreach(string extension in extensions)
+                {
+                    foreach(string uniqueFile in uniqueFiles)
+                    {
+                        if(Path.GetExtension(uniqueFile) == extension)
+                        {
+                            fileName = uniqueFile;
+                            providerName = GetProviderFromExtension(extension);
+                            break;
+                        }
+                    }
+                    if(fileName != "")
+                        break;
+                }
+
+                if(fileName != "")
+                {
+                    source.provider = providerName;
+                    source.source = fileName;
+                }
+            }
 
 
 
-            // try
-            // {
-            //     System.IO.File.WriteAllText(destfile,text);
-            // }
-            // catch
-            // {
-            //     success = false;
-            // }
-            // if(!success)
-            // {
-            //     this.lastmessage = ($"Could not write to file '{destfile}'.");
-            //     return false;
-            // }
+            // 4 - if there is a query + provider + source but no connection, then;
+            //     4a - if the provider is file-based and source file exists then create a valid connection
+            //     4b - otherwise, set connection = source and source = ""
+            if(    !(source.query == "" || source.query == "Default")
+                && !(source.provider == "" || source.provider == "Default" )
+                &&  (source.connection == "" || source.connection == "Default")
+                && !(source.source == "" || source.source == "Default") )
+            {
+                if(source.provider == "Microsoft.Data.Sqlite"
+                    || source.provider == "Microsoft.Access"
+                    || source.provider == "Microsoft.Excel"
+                    || source.provider == "CSV"
+                    || source.provider == "XML"
+                    || source.provider == "JSON"
+                    || source.provider == "Text")
+                {
+                    string fileCheck = source.source;
+                    if(!File.Exists(fileCheck))
+                        fileCheck =Path.Combine(System.Environment.CurrentDirectory,fileCheck);
+
+                    // this exists, create a 'real' connection based on the extension type
+                    if(source.provider == "Text" )
+                    {
+                        source.connection = fileCheck;
+                    }
+                    else if(source.provider == "CSV" )
+                    {
+                        source.connection = fileCheck;
+                    }
+                    else if(source.provider == "Microsoft.Excel" )
+                    {
+                        source.connection = fileCheck;
+                    }
+                    else if(source.provider == "Microsoft.Access" )
+                    {
+
+                        source.connection = @"Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq="+fileCheck+";Exclusive=1;Uid=admin;Pwd=;";;
+                    }
+                    else if(source.provider == "Microsoft.Data.Sqlite" )
+                    {
+                        source.connection = @$"Data Source="+fileCheck+";";
+                    }
+                }
+                else
+                {
+                    // the source can be just a URL: change it to the relevant connection-string
+                    source.connection = source.source;
+                }
+            }
+
+                // MySql.Data.MySqlClient
+                // Microsoft.Data.Sqlite
+                // Microsoft.Data.SqlClient
+                // System.Data.Odbc
+                // Microsoft.Access
+                // Microsoft.Excel
+                // CSV
+                // Text
+                // XML
+                // JSON
 
 
-                    // helptext.Add( "   -p|--provider     Provider name.");
-                    // helptext.Add( "   -c|--connection   Connection string.");
-                    // helptext.Add( "   -q|--query        SQL query.");
-                    // helptext.Add($"   -s|--source       Full path to source file.");
-                    // helptext.Add($"   -o|--output       Full path to output file.");
-                    // helptext.Add( "   -d|--dqchar       Character to replace with '\"' in query/connection string.");
-                    // helptext.Add( "   -v|--verbosity    Level of output verbosity.");
-                    // load.Add(new ParameterSetting(){
-                    //         category = category,
-                    //         setting = "--provider",
-                    //         synonym = "-p",
-                    //         description = "Provider Name",
-                    //         helptext = new List<string>(){
-                    //             $"Usage: qzl {category} -p providername",
-                    //             "",
-                    //             "Specify the name of the SQL provider.  This must be one of the following:",
-                    //             "",
-                    //             "ms mssql|SqlServer",
-                    //             "my mysql|MySql",
-                    //             "or oracle|Oracle",
-                    //             "od odbc|ODBC",
-                    //             "sl sqllite|SQLlite",
-                    //             "pg postgre|PostgreSQL",
-                    //             "xl xlsx|XLSX|Excel",
-                    //             "cv csv|CSV",
-                    //             "",
-                    //         },
-                    //         paratype = ParameterType.Input,
-                    //         nextparatype = ParameterType.Text
-                    //     });
-                    // load.Add(new ParameterSetting(){
-                    //         category = category,
-                    //         setting = "--connection",
-                    //         synonym = "-c",
-                    //         description = "Connection string",
-                    //         helptext = new List<string>(){
-                    //             $"Usage: qzl {category} -c connectionstring",
-                    //             "",
-                    //             "Specify the connection string.",
-                    //             "",
-                    //             "If the string has double-quotes, replace these with '|' characters.",
-                    //             "or the character specified with the -d|--double option",
-                    //         },
-                    //         paratype = ParameterType.Input,
-                    //         nextparatype = ParameterType.Text
-                    //     });
-                    // load.Add(new ParameterSetting(){
-                    //         category = category,
-                    //         setting = "--query",
-                    //         synonym = "-q",
-                    //         description = "SQL query",
-                    //         helptext = new List<string>(){
-                    //             $"Usage: qzl {category} -q query",
-                    //             "",
-                    //             "Specify the SQL query.",
-                    //             "",
-                    //             "If the query has double-quotes, replace these with '|' characters.",
-                    //             "or the character specified with the -d|--double option",
-                    //         },
-                    //         paratype = ParameterType.Input,
-                    //         nextparatype = ParameterType.Text
-                    //     });
+//            string outputfile = source.output;
+//            string outputformat = source.format;
 
-                    // load.Add(new ParameterSetting(){
-                    //         category = category,
-                    //         setting = "--source",
-                    //         synonym = "-s",
-                    //         description = "SQL query source file",
-                    //         helptext = new List<string>(){
-                    //             $"Usage: csgen {category} -s sourcefilename",
-                    //             "",
-                    //             "Specify the full path to a file containing SQL queries.",
-                    //             "",
-                    //             "If the -q|--query option is passed in then -s|--source is ignored.",
-                    //             "",
-                    //             "If no -q|--query option is passed then the current directory.",
-                    //         },
-                    //         paratype = ParameterType.Input,
-                    //         nextparatype = ParameterType.File
-                    //     });
+            // if(querymode == "Default")
+            //     querymode = sqldb.GuessQueryMethod(sqldb.CurrentQuery);
+            // if(provider == "Default")
+            //     provider = sqldb.GuessProvider(sqldb.CurrentConnectionString);
 
-                    // load.Add(new ParameterSetting(){
-                    //         category = category,
-                    //         setting = "--output",
-                    //         synonym = "-o",
-                    //         description = "Output File",
-                    //         helptext = new List<string>(){
-                    //             $"Usage: qzl {category} -o outputfilename",
-                    //             "",
-                    //             "Specify the name of the file to be created and optionally the full path.",
-                    //             "",
-                    //             "If no full path is specified then the current directory is used.",
-                    //             "This must be a valid filename and will be overwritten without notification.",
-                    //             $"If not specified, the {category} name is used with '.{fileextension}' appended.",
-                    //             $"If neither are specified, the file '{defaultfile}' is created in the current directory."
 
-                    //         },
-                    //         paratype = ParameterType.Input,
-                    //         nextparatype = ParameterType.File
-                    //     });
-                    // load.Add(new ParameterSetting(){
-                    //         category = category,
-                    //         setting = "--dqchar",
-                    //         synonym = "-d",
-                    //         description = "Replacement for \" character",
-                    //         helptext = new List<string>(){
-                    //             $"Usage: qzl {category} -d character",
-                    //             "",
-                    //             "Specify the character in parameters to be replaced with a '\"' character.",
-                    //             "",
-                    //             "By default all '|' characters are replaced with '\"' characters.",
-                    //             "Specify -d \"\" to have no replacements.",
-                    //         },
-                    //         paratype = ParameterType.Input,
-                    //         nextparatype = ParameterType.Any
-                    //     });
-                    // load.Add(new ParameterSetting(){
-                    //         category = category,
-                    //         setting = "--verbosity",
-                    //         synonym = "-v",
-                    //         description = "Verbosity level",
-                    //         helptext = new List<string>(){
-                    //             $"Usage: qzl {category} -v verbositylevel",
-                    //             "",
-                    //             "Specify the level of information outputed to the console.",
-                    //             "(none|default|full)",
-                    //             "",
-                    //             "The following are valid values for verbositylevel are:",
-                    //             "",
-                    //             "  none      No console output.",
-                    //             "  default   NonQuery: 'Rows affected: n'",
-                    //             "            Scalar:   'n'",
-                    //             "            Reader:   'Rows affected: n'",
-                    //             "                      'Table1'",
-                    //             "                      'Column1[|Column2][|Column3][..]' {max 200 chars}",
-                    //             "                      '[Row1Item1[|Row1Item2][|Row1Item3][..]] {max 200 chars}",
-                    //             "                      '[Row2Item1[|Row2Item2][|Row2Item3][..]] {max 200 chars}",
-                    //             "                      '{max 20 rows}",
-                    //             "  full      NonQuery: 'Rows affected: n'",
-                    //             "            Scalar:   'n'",
-                    //             "            Reader:   'Rows affected: n'",
-                    //             "                      'Table1'",
-                    //             "                      'Column1[|Column2][|Column3][..]'",
-                    //             "                      '[Row1Item1[|Row1Item2][|Row1Item3][..]]",
-                    //             "                      '[Row2Item1[|Row2Item2][|Row2Item3][..]]"
-                    //         },
-                    //         paratype = ParameterType.Input,
-                    //         nextparatype = ParameterType.Any
-                    //     });
+
+
+            // 5 - if there is no provider, check the file extension
+            if(source.provider == "" || source.provider == "Default" )
+            {
+                source.provider = GetProviderFromExtension(Path.GetExtension(source.connection.TrimEnd(';')));
+            }
+
+
+            // 6 - if there is no output specified then;
+            //     6a - if the input is Excel and no output is specified
+            //          then overwrite the source file ONLY if a nonquery and is either Default or specified
+            string querymode = GuessQueryMethod(source.query);
+            if(source.provider == "Microsoft.Excel" && querymode == "NonQuery"  && source.output == "" )
+            {
+                source.output = source.connection;
+                source.format = "Microsoft.Excel";
+            }
+
+
+            // 7 - if there is an output file specified but not a format, guess the format
+            if(source.format == "" && source.output != "" )
+            {
+                source.format = GuessOutputFormat(source.output);
+            }
 
 
 
 
 
-#endregion setup-generation
+            // // if the input is Excel and no output is specified
+            // // then overwrite the source file ONLY if a nonquery and is either Default or specified
+            // if(provider == "Microsoft.Excel" && querymode == "NonQuery" && outputfile == "" && outputformat != "None")
+            //     outputfile = source.connection;
+
+            // if(outputformat == "" && outputfile == "")
+            //     outputformat = "None";
+            // if(outputformat == "" || outputformat == "Default")
+            //     outputformat = this.GuessOutputFormat(outputfile);
 
 
-#region general-helper-methods
+
+
+        }
+
+
+
+
+        #endregion setup-generation
+
+
+        #region general-helper-methods
 
         public string GetShortType(string longtype)
         {
@@ -736,6 +843,70 @@ full      NonQuery: 'Rows affected: n'
             return sqlCommands;
         }
 
+        public List<string> GetFilesWithUniqueExtensions(string directoryPath)
+        {
+            // Get all files in the specified directory
+            var allFiles = Directory.GetFiles(directoryPath);
+
+            // Dictionary to count occurrences of each file extension
+            Dictionary<string, int> extensionCount = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            // Populate the dictionary with file extension counts
+            foreach (var file in allFiles)
+            {
+                string extension = Path.GetExtension(file);
+                if (extensionCount.ContainsKey(extension))
+                {
+                    extensionCount[extension]++;
+                }
+                else
+                {
+                    extensionCount[extension] = 1;
+                }
+            }
+
+            // Filter files that have unique (exactly one) file extension
+            var uniqueFiles = allFiles.Where(file => extensionCount[Path.GetExtension(file)] == 1).ToList();
+
+            return uniqueFiles;
+        }
+
+        private static string GetProviderFromExtension(string extension)
+        {
+            string provider = "";
+            if(extension == ".txt")
+            {
+                provider = "Text";
+            }
+            else if(extension == ".csv")
+            {
+                provider = "CSV";
+            }
+            else if(extension == ".xlsx")
+            {
+                provider = "Microsoft.Excel";
+            }
+            else if(extension == ".accdb" || extension == ".mdb")
+            {
+                provider = "Microsoft.Access";
+            }
+            else if(extension == ".db")
+            {
+                provider = "Microsoft.Data.Sqlite";
+            }
+            return provider;
+        }
+
+        private static string GuessQueryMethod(string sqlQuery)
+        {
+            string checkSql = (sqlQuery.Trim().ToLower() + new string(' ',20));
+            if(checkSql.Substring(0,7) == "select ")
+                return "Reader";
+            return "NonQuery";
+        }
+
 #endregion general-helper-methods
     }
+
+
 }

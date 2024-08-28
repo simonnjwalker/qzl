@@ -111,8 +111,9 @@ namespace Seamlex.Utilities
                     helptext.Add($"  -f|--format        Format of output (XML/SQL/XLSX).");
                     helptext.Add($"  -o|--output        Full path to output file.");
                     // helptext.Add($"  -t|--type          Output type.");
-                    helptext.Add( "  -d|--dqchar        Character to replace with '\"' in query/connection string.");
                     helptext.Add( "  -v|--verbosity     Level of information displayed in console.");
+                    helptext.Add( " -dq|--dqchar        Character to replace with '\"' in query/connection string.");
+                    helptext.Add( " -nh|--noheuristic   Suppress defaulting missing/imcomplete parameters.");
                     load.Add(new ParameterSetting(){
                             category = category,
                             setting = "--provider",
@@ -128,7 +129,7 @@ namespace Seamlex.Utilities
                                 "   ma access|Access",
                                 // "   or oracle|Oracle",
                                 "   od odbc|ODBC",
-                                "   sl sqllite|SQLlite",
+                                "   sl sqlite|SQLite",
                                 // "   pg pgsql|PostgreSQL",
                                 "   xl xlsx|XLSX|Excel",
                                 "   cv csv|CSV",
@@ -151,7 +152,7 @@ namespace Seamlex.Utilities
                                 "",
                                 "If the string has double-quotes, replace these with '|' characters.",
                                 "",
-                                "or the character specified with the -d|--double option",
+                                "or the character specified with the -dq|--dqchar option",
                                 "",
                                 "For file formats (XLSX,XML,CSV,JSON), this is either:",
                                 "   1 - the full source path and file name; or,",
@@ -216,11 +217,16 @@ namespace Seamlex.Utilities
                             helptext = new List<string>(){
                                 $"Usage: qzl {category} -s sourcefilename",
                                 "",
-                                "Specify the full path to a file containing SQL queries.",
+                                "Specify the full path to a .sql file or a file data source.",
                                 "",
-                                "If the -q|--query option is passed in then -s|--source is ignored.",
+                                "If the -q|--query option is passed and this is a .sql file then ",
+                                "the value in -s|--source is ignored.",
                                 "",
                                 "If no -q|--query option is passed then the current directory.",
+                                "",
+                                "Alternatively, if this is a data file and no -c|connection property",
+                                "is passed in and the -nh|noheuristic parameter is not set then the",
+                                "application will use this file as a data source.",
                             },
                             paratype = ParameterType.Input,
                             nextparatype = ParameterType.File
@@ -264,27 +270,10 @@ namespace Seamlex.Utilities
                                 "",
                                 "If the method is 'reader' then this is a data file.",
                                 "If the method is 'scalar' then this is a file with a single value.",
-                                "If the method is 'nonquery' then no file is created.",
-
+                                "If the method is 'nonquery' then no file is created."
                             },
                             paratype = ParameterType.Input,
                             nextparatype = ParameterType.File
-                        });
-                    load.Add(new ParameterSetting(){
-                            category = category,
-                            setting = "--dqchar",
-                            synonym = "-d",
-                            description = "Replacement for \" character",
-                            helptext = new List<string>(){
-                                $"Usage: qzl {category} -d character",
-                                "",
-                                "Specify the character in parameters to be replaced with a '\"' character.",
-                                "",
-                                "By default all '|' characters are replaced with '\"' characters.",
-                                "Specify -d \"\" to have no replacements.",
-                            },
-                            paratype = ParameterType.Input,
-                            nextparatype = ParameterType.Any
                         });
                     load.Add(new ParameterSetting(){
                             category = category,
@@ -319,6 +308,41 @@ namespace Seamlex.Utilities
                             },
                             paratype = ParameterType.Input,
                             nextparatype = ParameterType.Any
+                        });
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--noheuristic",
+                            synonym = "-nh",
+                            description = "Disable defaulting parameters",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -nh",
+                                "",
+                                "By default, the following actions will be taken by the application:",
+                                "",
+                                "If -c|--connection and -q|--query + -p|--provider are all set",
+                                "then no heuristics are used",
+                                "",
+                                "If there is no provider but either connection or source",
+                                "then guess provider and set the connection make source blank",
+                                "",
+                                "If there is no connection and no source:",
+                                "then check the files in the current directory",
+                                "and if there is only one of the specified provider ",
+                                "however if not provider, use file+provider in this order",
+                                ".db -> .accdb -> .mdb -> .xlsx -> .csv -> .txt",
+                                "",
+                                "If there is a query + provider + source but no connection:",
+                                "if a file-based provider and source exists then create a connection",
+                                "otherwise connection = source and source = ''",
+                                "",
+                                "If there is no output specified then:",
+                                "if the input is Excel then overwrite the source file ",
+                                "only if a nonquery and is either Default or specified",
+                                "",
+                                "If there is an output file specified but not a format, guess the format"
+
+                            },
+                            paratype = ParameterType.Switch
                         });
 
                     // TO DO: have the connection string be retrieves from userssecrets and/or config files 
