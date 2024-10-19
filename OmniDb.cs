@@ -306,37 +306,63 @@ namespace Seamlex.Utilities
 // Reader is used for any result set with multiple rows/columns (e.g., SELECT col1, col2 from sometable).
 // NonQuery is typically used for SQL statements without results (e.g., UPDATE, INSERT, etc.).
 
-                string checkverbosity = value.Trim().ToLower();
-                switch (checkverbosity) 
+                string verbosityText = value.Trim().ToLower();
+
+                switch (verbosityText)
                 {
-                    case "":
-                    case "d":
-                    case "default":
-                        currentverbosity = "Default";
-                    break;
-
-                    case "0":
-                    case "n":
                     case "none":
-                        currentverbosity = "None";
-                    break;
-
+                    case "lowest":
+                    case "nothing":
+                    case "n":
+                    case "0":
+                    case "nil":
+                        verbosityText = "None";
+                        break;
+                    case "minimum":
+                    case "min":
+                    case "m":
                     case "1":
-                    case "f":
+                        verbosityText = "Minimum";
+                        break;
+                    case "low":
+                    case "l":
+                    case "2":
+                        verbosityText = "Low";
+                        break;
+                    case "default":
+                    case "def":
+                    case "standard":
+                    case "std":
+                    case "d":
+                    case "s":
+                    case "3":
+                        verbosityText = "Default";
+                        break;
+                    case "high":
+                    case "higher":
+                    case "more":
+                    case "h":
+                    case "4":
+                        verbosityText = "High";
+                        break;
                     case "full":
-                        currentverbosity = "Full";
-                    break;
-
-                    case "e":
-                    case "error":
-                    case "errors":
-                        currentverbosity = "Errors";
-                    break;
-
+                    case "all":
+                    case "everything":
+                    case "highest":
+                    case "f":
+                    case "a":
+                    case "5":
+                    case "6":
+                    case "7":
+                    case "8":
+                    case "9":
+                        verbosityText = "Full";
+                        break;
                     default:
-                        currentverbosity = "Default";
-                    break;
+                        verbosityText = "Default";
+                        break;
                 }
+                currentverbosity = verbosityText;
             }
         }
 
@@ -2757,7 +2783,7 @@ namespace Seamlex.Utilities
                 return "XML";
             if(connString.ToLower().TrimEnd(';').EndsWith(".json"))
                 return "JSON";
-            return "MySql.Data.MySqlClient";
+            return "Microsoft.Data.Sqlite";
         }
 
         public string GetPipeTable(DataTable dataTable, int maxRows = -1)
@@ -3067,29 +3093,33 @@ namespace Seamlex.Utilities
         /// If executing the query succeeds, the number of rows affected is stored to output and to this.rowsaffected
         /// If the connection cannot be closed, output = -6 but this.rowsaffected remains populated
 
-            if(result == 1 || result == 0)
+            if(result > 1)
             {
-                return "The operation completed successfully.";
+                return "The operation completed and returned data";
+            }
+            else if(result == 1 || result == 0)
+            {
+                return "The operation completed normally";
             }
             else if(result == -1)
             {
-                return "The operation could not complete due to an initial connection or access issue.";
+                return "The operation could not complete due to an initial connection or access issue";
             }
             else if(result == -2)
             {
-                return "The operation could not complete due to an initial connection or access issue.";
+                return "The operation could not complete due to a connection or access issue";
             }
             else if(result == -3)
             {
-                return "The operation could not create the command or query.";
+                return "The operation could not create the command or query";
             }
             else if(result == -4)
             {
-                return "The operation could not open a database connection.";
+                return "The operation could not open a database connection";
             }
             else if(result == -5)
             {
-                return "The operation could not execute the query.";
+                return "The operation could not execute the query";
             }
             return "";
         }

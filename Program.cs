@@ -9,7 +9,20 @@ using Seamlex.Utilities;
 namespace Seamlex.Utilities
 {
 
-    // TO DO need to output the SQL queries for excel to a separate file
+
+/*
+
+
+
+
+dotnet publish --configuration Release -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:CopyOutputSymbolsToPublishDirectory=false --self-contained
+
+cmdadmin
+
+xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\system32
+
+*/
+
 
     public class Program
     {
@@ -34,6 +47,7 @@ namespace Seamlex.Utilities
         {
             QzlMain cg = new();
             // test
+            bool testverbosity = false;
             bool testaccess = false;
             bool testxlsx = false;
             bool testreader = false;
@@ -46,30 +60,64 @@ namespace Seamlex.Utilities
 
 // qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "users.csv"
 
-/*
-dotnet publish --configuration Release -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:CopyOutputSymbolsToPublishDirectory=false --self-contained
 
-cmdadmin
 
-xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\system32
+// None|n|nil|0 / Minimum|min|m|1 / Default|def|d|2 / Full|all|max|f|4
 
-*/
+
+
+            if(testverbosity)
+            {
+                // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+                System.IO.File.Exists("testdb1.db");
+                    System.IO.File.Delete("testdb1.db");
+                cg.parameters.Clear();
+                cg.parameters.Add("sql");
+                cg.parameters.Add("-q");
+                cg.parameters.Add(@"CREATE TABLE test1(testfield1 INT);");
+                cg.parameters.Add("-c");
+                cg.parameters.Add(@"testdb1.db");
+                cg.parameters.Add("-v");
+                cg.parameters.Add(@"all");
+
+                cg.Run();
+                return;
+            }
+
+
 
             if(testaccess)
             {
+
+                // qzl sql -c "testnames.accdb" -q "create table staff(firstname VARCHAR, lastname VARCHAR, code VARCHAR)" -v full
+                if(System.IO.File.Exists(@"C:\snjw\code\qzl\bin\Debug\net7.0\testnames.accdb"))
+                    System.IO.File.Delete(@"C:\snjw\code\qzl\bin\Debug\net7.0\testnames.accdb");                
+                System.IO.File.Copy(@"C:\Users\seaml\OneDrive\learning\ED5985\AT3\testnames.accdb", @"C:\snjw\code\qzl\bin\Debug\net7.0\testnames.accdb");                
+
+
                 // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
                 cg.parameters.Clear();
                 cg.parameters.Add("sql");
                 cg.parameters.Add("-q");
-                cg.parameters.Add(@"SELECT QCEStudentT.EQID, QCEStudentT.Year_Level, QCEStudentT.QCERisk, QCEStudentT.Preferred_Last_Name, QCEStudentT.Preferred_First_Name, QCEStudentT.Last_Name, QCEStudentT.First_Name, QCEStudentT.Enrolment_Status,  QCEStudentT.MonitoredBy FROM QCEStudentT WHERE EQID='7709685374K'");
-                cg.parameters.Add("--source");
-                cg.parameters.Add(@"C:\snjw\code\pshs\ar23.accdb");
-                cg.parameters.Add("-o");
-                cg.parameters.Add(@"C:\snjw\code\pshs\student.csv");
+                
+                cg.parameters.Add(@"SELECT * FROM Student WHERE Sex = 'm';");
+                cg.parameters.Add("-c");
+                cg.parameters.Add("testnames.accdb");
                 cg.parameters.Add("-v");
-                cg.parameters.Add(@"full");
+                cg.parameters.Add(@"5");
 
 
+/*
+
+
+                cg.parameters.Add(@"INSERT INTO staff(lastname,firstname,code) VALUES('Abraham','Asha',1);");
+
+GRANT SELECT ON MSysObjects TO Admin;
+
+                cg.parameters.Add(@"SELECT QCEStudentT.EQID, QCEStudentT.Year_Level, QCEStudentT.QCERisk, QCEStudentT.Preferred_Last_Name, QCEStudentT.Preferred_First_Name, QCEStudentT.Last_Name, QCEStudentT.First_Name, QCEStudentT.Enrolment_Status,  QCEStudentT.MonitoredBy FROM QCEStudentT WHERE EQID='7709685374K'");
+
+SELECT MSysObjects.Name AS table_name FROM MSysObjects WHERE (((Left([Name],1))<>'~') AND ((Left([Name],4))<>'MSys') AND ((MSysObjects.Type) In (1,4,6)) AND ((MSysObjects.Flags)=0))order by MSysObjects.Name 
+*/
                 // cg.parameters.Add("-q");
 //                cg.parameters.Add(@"SELECT * FROM Student;");
 //                cg.parameters.Add(@"UPDATE Student SET FirstName ='Emma' WHERE UCASE(FirstName) = 'EMMA++';");

@@ -55,7 +55,8 @@ namespace Seamlex.Utilities
                 }
             }
 
-            output.verbosity = ToProper(output.verbosity);
+            output.verbosity = GetVerbosity(output.verbosity);
+            output.verblevel = GetVerbosityLevel(output.verbosity);
             mv = output;
             return true;
         }
@@ -200,6 +201,7 @@ namespace Seamlex.Utilities
                                     connection = source.connection,
                                     method = source.method,
                                     verbosity = source.verbosity,
+                                    verblevel = source.verblevel,
                                     dqchar = source.dqchar
                                 };
 
@@ -213,10 +215,12 @@ namespace Seamlex.Utilities
                 }
                 else
                 {
-                    if( source.verbosity == "Default" || source.verbosity == "Full" )
+// 1.0.7 SNJW now have verblevels with 3 as the default
+//                    if( source.verbosity == "Default" || source.verbosity == "Full" )
+                    if( source.verblevel >=3 )
                     {
                         this.lastmessage = errorText.ToString();
-                        if(source.verbosity == "Full" && errorFullText !="")
+                        if( source.verblevel >=4 )
                             this.lastmessage += Environment.NewLine + errorFullText;
                     }
                 }
@@ -237,11 +241,14 @@ namespace Seamlex.Utilities
             string connectionstring = sqldb.CurrentConnectionString;
             string query = sqldb.CurrentQuery;
             string querymode = sqldb.CurrentQueryMode;
-            string verbosity = sqldb.CurrentVerbosity;
+            string verbosity = GetVerbosity(sqldb.CurrentVerbosity);
+            int verblevel = GetVerbosityLevel(verbosity);
             string provider = sqldb.CurrentProvider;
             string outputfile = source.output;
             string outputformat = source.format;
 
+
+            DateTime startTime = DateTime.Now;
 
 
 
@@ -328,17 +335,94 @@ namespace Seamlex.Utilities
                 result = sqldb.RowsAffected;
 
 
+            if(querymode == "Default")
+                querymode = GuessQueryMethod(query);
+
+
+
+            DateTime finishTime = DateTime.Now;
+
+
             // console output
             StringBuilder console = new();
-            if(verbosity == "Full" )
-                console.AppendLine(sqldb.CurrentQuery);
+// 1.0.7 SNJW changed verbosity into a scale with 3 as the default
+//            if(verbosity == "Full" )
 
 
-            if(querymode == "Reader" && ( verbosity == "Default" || verbosity == "Full" ) )
+
+//            if(querymode == "Reader" && ( verbosity == "Default" || verbosity == "Full" ) )
+        // 1.0.7 verbosity level reflects what to output to the console window
+        // for reader queries: 
+        //  None|n|nil|0     -- nothing
+        //  Minimum|min|m|1  -- resultrows
+        //  Low|low|l|2      -- result=resultrows+outputmax10+errors
+        //  Default|def|d|3  -- result=resultrows+outputmax20+errors
+        //  High|h|4         -- query+tablename+result=resultrows+result=resultcode=code+outputmax100+start+finish+resultcode+errors
+        //  Full|all|max|f|5 -- query+tablename+result=resultrows+result=resultcode=code+outputall+start+finish+timetocomplete+resultcode+resultexplanation+errors
+
+        // for scalar queries: 
+        //  None|n|nil|0     -- nothing
+        //  Minimum|min|m|1  -- result
+        //  Low|low|l|2      -- result=result
+        //  Default|def|d|3  -- result=result+rows=rowsaffected+errors+timetocomplete
+        //  High|h|4         -- query+result=result+rows=rowsaffected+timetocomplete+start+finish+resultcode+errors
+        //  Full|all|max|f|5 -- query+result=result+rows=rowsaffected+start+finish+timetocomplete+resultcode+resultexplanation+errors
+
+        // for non-queries: 
+        //  None|n|nil|0     -- nothing
+        //  Minimum|min|m|1  -- 1or0
+        //  Low|low|l|2      -- result=1or0+errors
+        //  Default|def|d|3  -- result=successorfailure+errors
+        //  High|h|4         -- query+result=successorfailure+rows=rowsaffected+start+finish+resultcode+errors
+        //  Full|all|max|f|5 -- query+result=successorfailure+rows=rowsaffected+start+finish+timetocomplete+resultcode+resultcode+resultexplanation+errors
+
+
+            if(verblevel > 3 )
+                console.AppendLine("Query: " + sqldb.CurrentQuery);
+
+
+            if(verblevel > 4 )
+            {
+                console.AppendLine("Connection string: " + sqldb.CurrentConnectionString);
+                console.AppendLine("Provider: " + sqldb.CurrentProvider);
+                console.AppendLine("Query mode: " + querymode);
+                if(sqldb.CurrentOutputProvider.Trim() != "" && sqldb.CurrentOutputProvider != "Default")
+                {
+                    console.AppendLine("Output provider: " + sqldb.CurrentOutputProvider);
+                }
+                if(outputformat.Trim() != "" && outputformat != "Default")
+                {
+                    console.AppendLine("Output format: " + outputformat);
+                }
+                if(outputfile.Trim() != "" && outputfile != "Default")
+                {
+                    console.AppendLine("Output file: " + outputfile);
+                }
+            }
+
+
+            if(verblevel > 3 )
+                console.AppendLine("Start time: " + startTime.ToLongTimeString());
+            if(verblevel > 3 )
+                console.AppendLine("Finish time: " + finishTime.ToLongTimeString());
+
+            if(querymode == "Reader" && verblevel > 1 )
             {
                 int maxLines = 10;
-                if(verbosity == "Full")
+                if(verblevel == 3)
+                {
+                    maxLines = 20;
+                }
+                else if(verblevel == 4)
+                {
+                    maxLines = 100;
+                }
+                else
+                {
                     maxLines = (2^24)-1;
+                }
+                // if(verbosity == "Full")
+                //     maxLines = (2^24)-1;
 
                 for (int i = 0; i < sqldb.LastResult.Tables.Count; i++)
                 {
@@ -346,47 +430,110 @@ namespace Seamlex.Utilities
                         console.AppendLine($" ");
 
                     // 
-                    if(sqldb.CurrentVerbosity == "Full")
+//                    if(sqldb.CurrentVerbosity == "Full")
+                    if(verblevel > 3)
                     {
                         console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
                         console.AppendLine($"{sqldb.LastResult.Tables[i].TableName}");
                         console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
                     }
 
-                    console.Append(sqldb.GetPipeTable(sqldb.LastResult.Tables[i],maxLines ));
+                    console.AppendLine(sqldb.GetPipeTable(sqldb.LastResult.Tables[i],maxLines ));
                 }
             }
 
-            if(querymode == "Scalar" && ( verbosity == "Default" || verbosity == "Full" ) )
+
+//            if(querymode == "Scalar" && ( verbosity == "Default" || verbosity == "Full" ) )
+
+
+            if(querymode == "Scalar" && ( verblevel > 0 ) )
             {
-                console.Append(sqldb.LastScalarResult);
+                if(verblevel == 1)
+                {
+                    console.AppendLine(sqldb.LastScalarResult);
+                }
+                else
+                {
+                    console.AppendLine("Last scalar result: " + sqldb.LastScalarResult);
+                }
             }
 
-            if(querymode == "NonQuery" && ( verbosity == "Default" || verbosity == "Full" ) )
+//            if(querymode == "NonQuery" && ( verbosity == "Default" || verbosity == "Full" ) )
+            if(querymode == "NonQuery" && ( verblevel > 0 ) )
             {
-                if(result < -1 && verbosity == "Full")
-                    console.Append("The operation did not complete successfully.  ");
-
-                if(result >= -1 && verbosity == "Full")
-                    console.Append("The operation completed successfully.  ");
-                
+                if(verblevel == 1 )
+                {
+                    if(result < -1)
+                    {
+                        console.AppendLine("0");
+                    }
+                    else
+                    {
+                        console.AppendLine("1");
+                    }
+                }
+                else if(verblevel == 2 )
+                {
+                    if(result < -1)
+                    {
+                        console.AppendLine("Last result: 0");
+                    }
+                    else
+                    {
+                        console.AppendLine("Last result: 1");
+                    }
+                }
+                else
+                {
+                    if(result < -1)
+                    {
+                        console.AppendLine("Execution of the query had some errors");
+                    }
+                    else
+                    {
+                        console.AppendLine("Execution of the query completed without errors");
+                    }
+                }
             }
 
-            if(result < -1 && ( verbosity == "Default" || verbosity == "Full" ) )
+            if(verblevel > 2 )
             {
-                string explanation = sqldb.GetExplanation(result);
-                console.AppendLine($"qzl result code: {result}");
-                console.AppendLine(explanation);
+                var timeDifference = finishTime - startTime;
+                if(timeDifference.Milliseconds > 2000)
+                {
+                    console.AppendLine("Execution length: " + timeDifference.Seconds.ToString() + " seconds");
+                }
+                else
+                {
+                    console.AppendLine("Execution length: " + timeDifference.Milliseconds.ToString() + "ms");
+                }
             }
 
-            if(result >= -1 && ( verbosity == "Default" || verbosity == "Full" ) )
-                console.AppendLine($"Rows affected: {result}");
 
-            if(verbosity == "Full" && sqldb.LastDbError != "")
+            if(( querymode == "Scalar" || querymode == "NonQuery" ) && ( verblevel >= 3) )
             {
-                console.AppendLine($" ");
-                console.AppendLine($"Last DB error:");
-                console.AppendLine(sqldb.LastDbError);
+                console.AppendLine("Rows affected: " + sqldb.RowsAffected);
+            }
+
+//            if(result < -1 && ( verbosity == "Default" || verbosity == "Full" ) )
+            if(verblevel > 3 )
+            {
+                string qzlResult = $"qzl result code: {result}";
+                if(verblevel > 4 )
+                    qzlResult = qzlResult + " (" + sqldb.GetExplanation(result) + ")";
+                console.AppendLine(qzlResult);
+            }
+
+
+            // if(result >= -1 && ( verbosity == "Default" || verbosity == "Full" ) )
+            //     console.AppendLine($"Rows affected: {result}");
+
+//            if(verbosity == "Full" && sqldb.LastDbError != "")
+
+
+            if(sqldb.LastDbError != "" && verblevel > 1)
+            {
+                console.AppendLine($"Last error: " + sqldb.LastDbError);
             }
 
 
@@ -493,8 +640,9 @@ full      NonQuery: 'Rows affected: n'
                     }
                     else if(fileExt == ".accdb" || fileExt == ".mdb")
                     {
+                        // Access always need the full path
                         source.provider = "Microsoft.Access";
-                        source.connection = @"Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq="+fileCheck+";Exclusive=1;Uid=admin;Pwd=;";;
+                        source.connection = @"Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq="+System.IO.Path.GetFullPath(fileCheck)+";Exclusive=1;Uid=admin;Pwd=;";;
                         source.source = "";
                     }
                     else if(fileExt == ".db")
@@ -904,6 +1052,91 @@ full      NonQuery: 'Rows affected: n'
                 return "Reader";
             return "NonQuery";
         }
+
+        // 1.0.7 verbosity level now reflects what to output to the console window
+
+        private static string GetVerbosity(string verbosityText)
+        {
+            verbosityText = verbosityText.ToLower().Trim();
+
+            switch (verbosityText)
+            {
+                case "none":
+                case "lowest":
+                case "nothing":
+                case "n":
+                case "0":
+                case "nil":
+                    verbosityText = "None";
+                    break;
+                case "minimum":
+                case "min":
+                case "m":
+                case "1":
+                    verbosityText = "Minimum";
+                    break;
+                case "low":
+                case "l":
+                case "2":
+                    verbosityText = "Low";
+                    break;
+                case "default":
+                case "def":
+                case "standard":
+                case "std":
+                case "d":
+                case "s":
+                case "3":
+                    verbosityText = "Default";
+                    break;
+                case "high":
+                case "higher":
+                case "more":
+                case "h":
+                case "4":
+                    verbosityText = "High";
+                    break;
+                case "full":
+                case "all":
+                case "everything":
+                case "highest":
+                case "f":
+                case "a":
+                case "5":
+                case "6":
+                case "7":
+                case "8":
+                case "9":
+                    verbosityText = "Full";
+                    break;
+                default:
+                    verbosityText = "Default";
+                    break;
+            }
+
+            return verbosityText;
+        }
+
+        private static int GetVerbosityLevel(string verbosityText)
+        {
+            switch (verbosityText)
+            {
+                case "None":
+                    return 0;
+                case "Minimum":
+                    return 1;
+                case "Low":
+                    return 2;
+                case "Default":
+                    return 3;
+                case "High":
+                    return 4;
+                case "Full":
+                    return 5;
+            }
+            return 3;
+        }
+
 
 #endregion general-helper-methods
     }

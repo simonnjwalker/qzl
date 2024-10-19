@@ -1,3 +1,14 @@
+## [1.0.7] - 2024-10-19
+### Fixed
+- Changed -v options to be None, Minimum, Low, Default, High, Full
+https://github.com/simonnjwalker/qzl/issues/3
+- MS Access connection-string now uses full path to the file
+https://github.com/simonnjwalker/qzl/issues/2
+
+### Removed
+- The --type parameter is removed (folded into -c and -f)
+https://github.com/simonnjwalker/qzl/issues/1
+
 ## [1.0.6] - 2024-08-29
 ### Added
 - Best guess from few parameters (heuristics) 
@@ -20,22 +31,22 @@
 
 ## [1.0.3] - 2024-03-11
 ### Fixed
-- Output to a scalar (-m Scalar) now saves single value to a text file.
+- Output to a scalar (-m Scalar) now saves single value to a text file
 
 ### Added
-- Additional script commands for testing.
+- Additional script commands for testing
 
 ## [1.0.2] - 2024-03-10
 ### Fixed
-- No more errors when loading tables from Excel with no columns.
+- No more errors when loading tables from Excel with no columns
 
 ## [1.0.1] - 2024-03-10
 ### Fixed
-- Install script commands.
+- Install script commands
 
 ### Added
-- Create empty database works for Excel and SQLite.
+- Create empty database works for Excel and SQLite
 
 ## [1.0.0] - 2024-03-10
 ### Added
-- Initial release.
+- Initial release

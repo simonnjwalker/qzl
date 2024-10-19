@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Seamlex.Utilities;
-#pragma warning disable CS8602, CS8600
+#pragma warning disable CS8602, CS8600, IDE1006
 namespace Seamlex.Utilities
 {
     /// <summary>
@@ -29,6 +29,9 @@ namespace Seamlex.Utilities
         public string connection {get;set;} = "";  // connection string
         public string method {get;set;} = "";  // SQL query method
         public string verbosity {get;set;} = "";  // console output verbosity
+
+        // 1.0.7 SNJW create a level for this
+        public int verblevel {get;set;} = -1;  // console output verbosity
         public string dqchar {get;set;} = "";
         public bool noheuristic {get;set;} = false;
 
