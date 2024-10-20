@@ -1,3 +1,7 @@
+## [1.0.8] - 2024-08-20
+### Added
+- Vertical layout parameter (for console only) -la|--layout vertical
+
 ## [1.0.7] - 2024-10-19
 ### Fixed
 - Changed -v options to be None, Minimum, Low, Default, High, Full

@@ -18,6 +18,8 @@ namespace Seamlex.Utilities
         public string lastmessage="";
         public QzlGenInfo mv = new();
 
+        public int consolewidth = 129;
+
 #region setup-generation
 
         public bool SetFullModel(List<ParameterSetting> ps)
@@ -57,6 +59,8 @@ namespace Seamlex.Utilities
 
             output.verbosity = GetVerbosity(output.verbosity);
             output.verblevel = GetVerbosityLevel(output.verbosity);
+            output.layout = GetLayoutStyle(output.layout);
+            
             mv = output;
             return true;
         }
@@ -246,6 +250,8 @@ namespace Seamlex.Utilities
             string provider = sqldb.CurrentProvider;
             string outputfile = source.output;
             string outputformat = source.format;
+            string layout = source.layout;
+            int consolewidth = this.consolewidth;  // Console.WindowWidth
 
 
             DateTime startTime = DateTime.Now;
@@ -424,24 +430,148 @@ namespace Seamlex.Utilities
                 // if(verbosity == "Full")
                 //     maxLines = (2^24)-1;
 
-                for (int i = 0; i < sqldb.LastResult.Tables.Count; i++)
-                {
-                    if(i>0)
-                        console.AppendLine($" ");
+// -----
+// Student
+// -----
 
-                    // 
-//                    if(sqldb.CurrentVerbosity == "Full")
-                    if(verblevel > 3)
+
+// layout == "Table"
+// ID       FirstName      LastName
+// 62       Asha           Abraham
+// 63       Bianca         Bosun
+
+// layout == "Group"
+// ID       : 61
+// ID       : 62
+// ID       : 63
+// ID       : 64
+// ID       : 65
+// FirstName: Asha
+// FirstName: Bianca
+// FirstName: Claire
+// FirstName: David
+// FirstName: Ernie
+// LastName : Abraham
+
+// layout == "Vertical"
+// ID       : 61
+// FirstName: Asha
+// LastName : Abraham
+// ID       : 62
+// FirstName: Bianca
+// LastName:  Bosun
+
+
+                if(layout == "Table")
+                {
+                    for (int i = 0; i < sqldb.LastResult.Tables.Count; i++)
                     {
-                        console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
-                        console.AppendLine($"{sqldb.LastResult.Tables[i].TableName}");
-                        console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
+                        if(i>0)
+                            console.AppendLine($" ");
+                        if(verblevel > 3)
+                        {
+                            console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
+                            console.AppendLine($"{sqldb.LastResult.Tables[i].TableName}");
+                            console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
+                        }
+                        console.AppendLine(sqldb.GetPipeTable(sqldb.LastResult.Tables[i],maxLines ));
+                    }
+                }
+                else if(layout == "Group" || layout == "Vertical")
+                {
+                    // int consoleWidth = Console.WindowWidth;
+                    bool hasResults = false;
+                    
+                    for (int i = 0; i < sqldb.LastResult.Tables.Count; i++)
+                    {
+                        if (i > 0)
+                            console.AppendLine(" ");
+
+                        int maxFieldWidth = 0;
+                        foreach (System.Data.DataColumn column in sqldb.LastResult.Tables[i].Columns)
+                        {
+                            if (column.ColumnName.Trim().Length > maxFieldWidth)
+                            {
+                                maxFieldWidth = column.ColumnName.Trim().Length;
+                            }
+                        }
+                    
+                        if (verblevel > 3 )
+                        {
+                            if(sqldb.LastResult.Tables.Count==1 && sqldb.LastResult.Tables[0].TableName == "Table")
+                            {
+                                console.AppendLine(new String('-', 20));
+                                console.AppendLine($"Results:");
+                                console.AppendLine(new String('-', 20));
+                            }
+                            else
+                            {
+                                console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
+                                console.AppendLine($"{sqldb.LastResult.Tables[i].TableName}");
+                                console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
+                            }
+                        }
+
+                        if(layout == "Group" )
+                        {
+                            int valueWidth = consolewidth - maxFieldWidth - 1; // Adjust value width based on console width
+                            foreach (System.Data.DataColumn column in sqldb.LastResult.Tables[i].Columns)
+                            {
+                                string fieldName = column.ColumnName;
+                                
+                                // Limit the width of the field name
+                                string fieldNamePadded = (fieldName.Trim()+':').PadRight(maxFieldWidth+1);
+
+                                // Output key-value pairs for each row, limiting the second column's width
+                                foreach (System.Data.DataRow row in sqldb.LastResult.Tables[i].Rows)
+                                {
+                                    string value = row[column].ToString();
+                                    string valueFormatted = value.Length > valueWidth ? value.Substring(0, valueWidth - 1) + "…" : value;
+
+                                    console.AppendLine($"{fieldNamePadded} {valueFormatted}");
+                                    hasResults = true;
+                                }
+                            }
+                        }
+                        else if(layout == "Vertical" )
+                        {
+                            int valueWidth = consolewidth - maxFieldWidth - 1; // Adjust value width based on console width
+                            for (int j = 0; j < sqldb.LastResult.Tables[i].Rows.Count; j++)
+                            {
+                                System.Data.DataRow row = sqldb.LastResult.Tables[i].Rows[j];
+                                hasResults = true;
+                                if (j>0)
+                                    console.AppendLine(new String('-', 20));
+
+                                // Output key-value pairs for each row, limiting the second column's width
+                                foreach (System.Data.DataColumn column in sqldb.LastResult.Tables[i].Columns)
+                                {
+                                    // Limit the width of the field name
+                                    string fieldName = column.ColumnName;
+                                    string fieldNamePadded = (fieldName.Trim()+':').PadRight(maxFieldWidth+1);
+                                    string value = row[column].ToString();
+                                    string valueFormatted = value.Length > valueWidth ? value.Substring(0, valueWidth - 1) + "…" : value;
+
+                                    console.AppendLine($"{fieldNamePadded} {valueFormatted}");
+                                }
+                            }
+                        }
+
                     }
 
-                    console.AppendLine(sqldb.GetPipeTable(sqldb.LastResult.Tables[i],maxLines ));
+                    if (verblevel > 3 )
+                    {
+                        if(hasResults == true)
+                        {
+                            console.AppendLine(new String('-', 20));
+                        }
+                        else
+                        {
+                            console.AppendLine("{no results were returned}");
+                        }
+                    }
                 }
             }
-
 
 //            if(querymode == "Scalar" && ( verbosity == "Default" || verbosity == "Full" ) )
 
@@ -536,28 +666,6 @@ namespace Seamlex.Utilities
                 console.AppendLine($"Last error: " + sqldb.LastDbError);
             }
 
-
-/*
-
-none      No console output.
-errors    Error messages only.
-default   NonQuery: 'Rows affected: n'
-        Scalar:   'n'
-        Reader:   'Rows affected: n'
-                    'Table1'
-                    'Column1[|Column2][|Column3][..]' {max 200 chars}
-                    '[Row1Item1[|Row1Item2][|Row1Item3][..]] {max 200 chars}
-                    '[Row2Item1[|Row2Item2][|Row2Item3][..]] {max 200 chars}
-                    '{max 20 rows}
-full      NonQuery: 'Rows affected: n'
-        Scalar:   'n'
-        Reader:   'Rows affected: n'
-                    'Table1'
-                    'Column1[|Column2][|Column3][..]'
-                    '[Row1Item1[|Row1Item2][|Row1Item3][..]]
-                    '[Row2Item1[|Row2Item2][|Row2Item3][..]]"
-
-*/
             this.lastmessage = console.ToString();
         
 
@@ -1135,6 +1243,41 @@ full      NonQuery: 'Rows affected: n'
                     return 5;
             }
             return 3;
+        }
+
+        
+        // 1.0.8 layout style for data output to the console window
+        private static string GetLayoutStyle(string layoutText)
+        {
+            layoutText = layoutText.ToLower().Trim();
+
+            switch (layoutText)
+            {
+                case "default":
+                case "table":
+                case "d":
+                case "t":
+                    layoutText = "Table";
+                    break;
+                case "vertical":
+                case "vert":
+                case "v":
+                case "keypair":
+                case "kp":
+                case "k":
+                    layoutText = "Vertical";
+                    break;
+                case "grouped":
+                case "group":
+                case "g":
+                    layoutText = "Group";
+                    break;
+                default:
+                    layoutText = "Table";
+                    break;
+            }
+
+            return layoutText;
         }
 
 

@@ -12,8 +12,9 @@ namespace Seamlex.Utilities
 
 /*
 
-
-
+git add .
+git commit -m "1.0.x mmasge"
+git push
 
 dotnet publish --configuration Release -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:CopyOutputSymbolsToPublishDirectory=false --self-contained
 
@@ -60,8 +61,6 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
 
 // qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "users.csv"
 
-
-
 // None|n|nil|0 / Minimum|min|m|1 / Default|def|d|2 / Full|all|max|f|4
 
 
@@ -100,12 +99,15 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
                 cg.parameters.Add("sql");
                 cg.parameters.Add("-q");
                 
-                cg.parameters.Add(@"SELECT * FROM Student WHERE Sex = 'm';");
+                cg.parameters.Add(@"SELECT * FROM Student;");
                 cg.parameters.Add("-c");
                 cg.parameters.Add("testnames.accdb");
                 cg.parameters.Add("-v");
                 cg.parameters.Add(@"5");
 
+                cg.parameters.Add(@"--layout");
+//                cg.parameters.Add(@"Vertical");
+                cg.parameters.Add(@"v");
 
 /*
 

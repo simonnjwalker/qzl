@@ -22,17 +22,29 @@ namespace Seamlex.Utilities
 
         // these are set using System.Reflection:
         public string output {get;set;} = "";  //  Full path to output file.
+
         public string format {get;set;} = "";  //  Output format style.
+
         public string source {get;set;} = "";  // Loads queries from a file.
+
         public string provider {get;set;} = "";  // SQL Provider.
+
         public string query {get;set;} = "";  // SQL query
+
         public string connection {get;set;} = "";  // connection string
+
         public string method {get;set;} = "";  // SQL query method
+
         public string verbosity {get;set;} = "";  // console output verbosity
 
         // 1.0.7 SNJW create a level for this
-        public int verblevel {get;set;} = -1;  // console output verbosity
+        public int verblevel {get;set;} = -1;  // console output verbosity level
+
+        // 1.0.8 SNJW create layout option for vertical (keypair) output to the console
+        public string layout {get;set;} = "";  // console output layout style
+
         public string dqchar {get;set;} = "";
+
         public bool noheuristic {get;set;} = false;
 
     }

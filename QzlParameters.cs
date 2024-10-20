@@ -114,6 +114,7 @@ namespace Seamlex.Utilities
                     helptext.Add( "  -v|--verbosity     Level of information displayed in console.");
                     helptext.Add( " -dq|--dqchar        Character to replace with '\"' in query/connection string.");
                     helptext.Add( " -nh|--noheuristic   Suppress defaulting missing/imcomplete parameters.");
+                    helptext.Add( " -la|--layout        Output style for the console window.");
                     load.Add(new ParameterSetting(){
                             category = category,
                             setting = "--provider",
@@ -334,6 +335,26 @@ namespace Seamlex.Utilities
                             paratype = ParameterType.Switch
                         });
 
+                        // 1.0.8 SNJW add option for vertical layout for console window
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--layout",
+                            synonym = "-la",
+                            description = "Layout Format",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -la layoutformat",
+                                "",
+                                "Specify the type of output for the query.",
+                                "",
+                                "   d|default  Default (same as table)",
+                                "   t|table    Table (default style)",
+                                "   v|vertical Vertical style (keypairs)",
+                                "",
+                                "If unspecified the default is table.",
+                            },
+                            paratype = ParameterType.Input,
+                            nextparatype = ParameterType.Text
+                        });
                     // TO DO: have the connection string be retrieves from userssecrets and/or config files 
                     // https://learn.microsoft.com/en-us/ef/core/managing-schemas/scaffolding/?tabs=dotnet-core-cli
 
