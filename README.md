@@ -14,9 +14,7 @@ When installed, the syntax for use is as follows:
     
     Operation:
       sql               Performs a SQL query.
-      http              Performs an HTTP query.
-      text              Performs operations on a text file.
-      json              Performs operations on a JSON file.
+      net               Performs an HTTP query.
     
     Options:
       -h|--help         Display help for each method.

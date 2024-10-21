@@ -20,9 +20,9 @@ namespace Seamlex.Utilities
             ps.Clear();
             ps.AddRange(this.SetParameterInfoByCategory("--help"));
             ps.AddRange(this.SetParameterInfoByCategory("sql"));
-            ps.AddRange(this.SetParameterInfoByCategory("http"));
-            ps.AddRange(this.SetParameterInfoByCategory("text"));
-            ps.AddRange(this.SetParameterInfoByCategory("json"));
+            ps.AddRange(this.SetParameterInfoByCategory("net"));
+            // ps.AddRange(this.SetParameterInfoByCategory("text"));
+            // ps.AddRange(this.SetParameterInfoByCategory("json"));
             return;
         }
         private List<ParameterSetting> SetParameterInfoByCategory(string category)
@@ -48,9 +48,9 @@ namespace Seamlex.Utilities
                         "",
                         "Method:",
                         "  sql               Performs a SQL query.",
-                        "  http              Performs an HTTP query.",
-                        "  text              Performs operations on a text file.",
-                        "  json              Performs operations on a JSON file.",
+                        "  net               Performs a request to a URL.",
+                        // "  text              Performs operations on a text file.",
+                        // "  json              Performs operations on a JSON file.",
                         "",
                         "Options:",
                         "  -h|--help         Display help for each method."
@@ -65,10 +65,10 @@ namespace Seamlex.Utilities
 
 
             }
-            if(category == "sql" || category == "http" || category == "text" || category == "json" )
+            if(category == "sql" || category == "net" || category == "text" || category == "json" )
             {
                 string article = "a";
-                if(category=="sql" || category=="http")
+                if(category=="sql" || category=="net")
                     article = "an";
 
                 string categoryname = ToProper(category);
@@ -115,6 +115,7 @@ namespace Seamlex.Utilities
                     helptext.Add( " -dq|--dqchar        Character to replace with '\"' in query/connection string.");
                     helptext.Add( " -nh|--noheuristic   Suppress defaulting missing/imcomplete parameters.");
                     helptext.Add( " -la|--layout        Output style for the console window.");
+                    helptext.Add( " -mr|--maxrows       Maximum rows output to the console window.");
                     load.Add(new ParameterSetting(){
                             category = category,
                             setting = "--provider",
@@ -284,8 +285,8 @@ namespace Seamlex.Utilities
                             helptext = new List<string>(){
                                 $"Usage: qzl {category} -v verbositylevel",
                                 "",
-                                "Specify the level of information outputed to the console.",
-                                "(none|default|full)",
+                                "Specify the level of information outputted to the console.",
+                                "(none|minimum|low|default|high|full)",
                                 "",
                                 "The following are valid values for verbositylevel are:",
                                 "",
@@ -355,10 +356,208 @@ namespace Seamlex.Utilities
                             paratype = ParameterType.Input,
                             nextparatype = ParameterType.Text
                         });
+
+
+                    // 1.0.9 SNJW add max rows option for the console window
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--maxrows",
+                            synonym = "-mr",
+                            description = "Maximum Rows",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -mr maxrows",
+                                "",
+                                "Specify maximum number of rows to output to the console.",
+                                "",
+                                "If unspecified the default depends on the verbosity level."
+                            },
+                            paratype = ParameterType.Input,
+                            nextparatype = ParameterType.Integer
+                        });
+
                     // TO DO: have the connection string be retrieves from userssecrets and/or config files 
                     // https://learn.microsoft.com/en-us/ef/core/managing-schemas/scaffolding/?tabs=dotnet-core-cli
 
                 }
+
+
+                if(category == "net")
+                {
+                    helptext.Add( "  -u|--url           Remote location.");
+                    helptext.Add($" -hs|--headerstyle   Style of header (Chrome/Edge/FireFox).");
+                    helptext.Add($" -rm|--requestmethod Request method (GET/POST).");
+                    helptext.Add($"  -s|--source        Full path to upload file.");
+                    helptext.Add($"  -o|--output        Full path to output file.");
+                    helptext.Add( "  -v|--verbosity     Level of information displayed in console.");
+                    // helptext.Add( " -nh|--noheuristic   Suppress defaulting missing/imcomplete parameters.");
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--url",
+                            synonym = "-u",
+                            description = "Uniform Resource Location",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -u url",
+                                "",
+                                "Specify the location of the resource.",
+                                "",
+                                "This should include the protocol (https:// or http://).",
+                            },
+                            paratype = ParameterType.Input,
+                            nextparatype = ParameterType.Text
+                        });
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--headerstyle",
+                            synonym = "-hs",
+                            description = "Preformatted header style",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -hs headerstyle",
+                                "",
+                                "Specify the header style to use.",
+                                "",
+                                "   chrome|c   Google Chrome",
+                                "   edge|e     Microsoft Edge",
+                                "   opera|o    Opera",
+                                "   safari|s   Safari",
+                                "",
+                            },
+                            paratype = ParameterType.Input,
+                            nextparatype = ParameterType.Text
+                        });
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--requestmethod",
+                            synonym = "-rm",
+                            description = "Request method",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -rm requestmethod",
+                                "",
+                                "Specify the method to use in the request.",
+                                "",
+                                "   get|g      GET",
+                                "   post|p     POST",
+                                "",
+                                "If unspecified the default is GET."
+                            },
+                            paratype = ParameterType.Input,
+                            nextparatype = ParameterType.Text
+                        });
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--source",
+                            synonym = "-s",
+                            description = "Source file to upload",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -s sourcefilename",
+                                "",
+                                "Specify the full path to the file to attach.",
+                                "",
+                                "This will be added to the 'file' form property by default.",
+                            },
+                            paratype = ParameterType.Input,
+                            nextparatype = ParameterType.File
+                        });
+
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--output",
+                            synonym = "-o",
+                            description = "Output File",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -o outputfilename",
+                                "",
+                                "Specify the name of the file to be created and optionally the full path.",
+                                "",
+                                "If no full path is specified then the current directory is used.",
+                                "This must be a valid filename and will be overwritten without notification."
+                            },
+                            paratype = ParameterType.Input,
+                            nextparatype = ParameterType.File
+                        });
+                    load.Add(new ParameterSetting(){
+                            category = category,
+                            setting = "--verbosity",
+                            synonym = "-v",
+                            description = "Verbosity level",
+                            helptext = new List<string>(){
+                                $"Usage: qzl {category} -v verbositylevel",
+                                "",
+                                "Specify the level of information outputted to the console.",
+                                "(none|minimum|low|default|high|full)",
+                                "",
+                                "The following are valid values for verbositylevel are:",
+                                "",
+                                "  None|n|nil|0      No console output",
+                                "  Minimum|min|m|1   1 (success) or 0 (failure)",
+                                "  Low|low|l|2       Server message",
+                                "  Default|def|d|3   Server message + numchars + time to complete",
+                                "  High|h|4          Server message + numchars + result + time to complete",
+                                "  Full|all|max|f|5  Server message + numchars + result + time to complete + explanation",
+                            },
+                            paratype = ParameterType.Input,
+                            nextparatype = ParameterType.Any
+                        });
+                    // load.Add(new ParameterSetting(){
+                    //         category = category,
+                    //         setting = "--noheuristic",
+                    //         synonym = "-nh",
+                    //         description = "Disable defaulting parameters",
+                    //         helptext = new List<string>(){
+                    //             $"Usage: qzl {category} -nh",
+                    //             "",
+                    //             "By default, the following actions will be taken by the application:",
+                    //             "",
+                    //             "If -c|--connection and -q|--query + -p|--provider are all set",
+                    //             "then no heuristics are used",
+                    //             "",
+                    //             "If there is no provider but either connection or source",
+                    //             "then guess provider and set the connection make source blank",
+                    //             "",
+                    //             "If there is no connection and no source:",
+                    //             "then check the files in the current directory",
+                    //             "and if there is only one of the specified provider ",
+                    //             "however if not provider, use file+provider in this order",
+                    //             ".db -> .accdb -> .mdb -> .xlsx -> .csv -> .txt",
+                    //             "",
+                    //             "If there is a query + provider + source but no connection:",
+                    //             "if a file-based provider and source exists then create a connection",
+                    //             "otherwise connection = source and source = ''",
+                    //             "",
+                    //             "If there is no output specified then:",
+                    //             "if the input is Excel then overwrite the source file ",
+                    //             "only if a nonquery and is either Default or specified",
+                    //             "",
+                    //             "If there is an output file specified but not a format, guess the format"
+
+                    //         },
+                    //         paratype = ParameterType.Switch
+                    //     });
+
+                    //     // 1.0.8 SNJW add option for vertical layout for console window
+                    // load.Add(new ParameterSetting(){
+                    //         category = category,
+                    //         setting = "--layout",
+                    //         synonym = "-la",
+                    //         description = "Layout Format",
+                    //         helptext = new List<string>(){
+                    //             $"Usage: qzl {category} -la layoutformat",
+                    //             "",
+                    //             "Specify the type of output for the query.",
+                    //             "",
+                    //             "   d|default  Default (same as table)",
+                    //             "   t|table    Table (default style)",
+                    //             "   v|vertical Vertical style (keypairs)",
+                    //             "",
+                    //             "If unspecified the default is table.",
+                    //         },
+                    //         paratype = ParameterType.Input,
+                    //         nextparatype = ParameterType.Text
+                    //     });
+                    // TO DO: have the connection string be retrieves from userssecrets and/or config files 
+                    // https://learn.microsoft.com/en-us/ef/core/managing-schemas/scaffolding/?tabs=dotnet-core-cli
+
+                }
+
 
                 helptext.Add("  -h|--help          Display help.");
                 help.helptext.AddRange(helptext);

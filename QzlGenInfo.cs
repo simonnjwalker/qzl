@@ -9,7 +9,7 @@ using Seamlex.Utilities;
 namespace Seamlex.Utilities
 {
     /// <summary>
-    /// Manages and read csgen-specific parameters
+    /// Manages and read parameters passed-in
     /// </summary>
     public class QzlGenInfo
     {
@@ -46,6 +46,14 @@ namespace Seamlex.Utilities
         public string dqchar {get;set;} = "";
 
         public bool noheuristic {get;set;} = false;
+
+       // 1.0.9 SNJW added for http (qzl net)
+         public string url {get;set;} = "";
+        public string headerstyle {get;set;} = "";
+        public string requestmethod {get;set;} = "";
+
+        public int maxrows {get;set;} = -1;  // console output maximum rows shown
+
 
     }
 }

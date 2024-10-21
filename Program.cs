@@ -48,6 +48,9 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
         {
             QzlMain cg = new();
             // test
+            bool testxml = false;
+            bool testget = false;
+            bool testpost = false;
             bool testverbosity = false;
             bool testaccess = false;
             bool testxlsx = false;
@@ -59,9 +62,106 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
              string source = @"C:\snjw\code\shared\qzl\nullsource2.db";
              string dboutput = @"C:\snjw\code\qzl\app.output.xlsx";
 
-// qzl sql -c "test.db" -q "SELECT * FROM Users;" -o "users.csv"
+// qzl sql -q "SELECT * FROM QCEStudentT;" -o c:\temp\QCEStudentT.xml
 
-// None|n|nil|0 / Minimum|min|m|1 / Default|def|d|2 / Full|all|max|f|4
+
+/*
+
+qzl sql -q "SELECT * FROM AchievementResultsT;" -c C:\snjw\code\pshs\ar23.accdb  -o c:\temp\AchievementResultsT.xml -v 5 -la v
+
+qzl sql -q "SELECT * FROM StudentT;" -c C:\snjw\code\pshs\ar23.accdb  -o c:\temp\StudentT.xml -v 5 -la v
+
+qzl sql -q "SELECT * FROM QCEClassT;" -c C:\snjw\code\pshs\ar23.accdb  -o c:\temp\QCEClassT.xml -v 5 -la v
+
+qzl sql -q "SELECT * FROM QCEStudentT;" -c C:\snjw\code\pshs\ar23.accdb  -o c:\temp\QCEStudentT.xml -v 5 -la v
+
+qzl sql -q "SELECT [QCELinkClassT].[EQID], [QCELinkClassT].[Class_Name], [QCELinkClassT].[11T1] AS x11T1, [QCELinkClassT].[11T2] AS x11T2, [QCELinkClassT].[11T3] AS x11T3, [QCELinkClassT].[11T4] AS x11T4, [QCELinkClassT].[12T1] AS x12T1, [QCELinkClassT].[12T2] AS x12T2, [QCELinkClassT].[12T3] AS x12T3, [QCELinkClassT].[12T4] AS x12T4, [Type], OnTrack, PotentialPoints FROM QCELinkClassT;" -c C:\snjw\code\pshs\ar23.accdb -o c:\temp\QCELinkClassT.xml -v 5 -la v
+
+qzl sql -q "SELECT * FROM QCENoteT;" -c C:\snjw\code\pshs\ar23.accdb -o c:\temp\QCENoteT.xml -v 5 -la v
+
+
+
+
+
+        */
+            if(testxml)
+            {
+                System.IO.File.Delete(@"c:\temp\QCELinkClassT.xml");
+                cg.parameters.Clear();
+                cg.parameters.Add("sql");
+                cg.parameters.Add("-q");
+                cg.parameters.Add(@"SELECT * FROM QCELinkClassT;");
+                cg.parameters.Add("-c");
+                cg.parameters.Add(@"C:\snjw\code\pshs\ar23.accdb");
+                cg.parameters.Add("-o");
+                cg.parameters.Add(@"c:\temp\QCENoteT.xml");
+                cg.Run();
+                return;
+            }
+
+
+
+
+            if(testpost)
+            {
+
+
+// helptext.Add( "  -u|--url           Remote location.");
+// helptext.Add($" -hs|--headerstyle   Style of header (Chrome/Edge/FireFox).");
+// helptext.Add($" -rm|--requestmethod Request method (GET/POST).");
+// helptext.Add($"  -s|--source        Full path to upload file.");
+// helptext.Add($"  -o|--output        Full path to output file.");
+// helptext.Add( "  -v|--verbosity     Level of information displayed in console.");
+// "Unable to track an instance of type 'QCEStudentT' because it does not have a primary key. Only entity types with a primary key may be tracked."
+
+
+                // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+                cg.parameters.Clear();
+                cg.parameters.Add("net");
+                cg.parameters.Add("-u");
+                cg.parameters.Add(@"http://localhost:5005/api/v1/upload/xml/achievementresultsts/087474676dbc4cc48014274ac6aeb6c2");
+                cg.parameters.Add("-rm");
+                cg.parameters.Add(@"POST");
+                cg.parameters.Add("-s");
+                cg.parameters.Add(@"c:\temp\QCEStudentT.xml");
+                cg.parameters.Add("-v");
+                cg.parameters.Add(@"3");
+
+                cg.Run();
+                return;
+            }
+
+
+
+
+            if(testget)
+            {
+
+// helptext.Add( "  -u|--url           Remote location.");
+// helptext.Add($" -hs|--headerstyle   Style of header (Chrome/Edge/FireFox).");
+// helptext.Add($" -rm|--requestmethod Request method (GET/POST).");
+// helptext.Add($"  -s|--source        Full path to upload file.");
+// helptext.Add($"  -o|--output        Full path to output file.");
+// helptext.Add( "  -v|--verbosity     Level of information displayed in console.");
+// http://localhost:5005/api/v1/upload/xml/achievementresultsts/087474676dbc4cc48014274ac6aeb6c2
+
+                // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+                cg.parameters.Clear();
+                cg.parameters.Add("net");
+                cg.parameters.Add("-u");
+                cg.parameters.Add(@"https://anapioficeandfire.com/api/characters/583");
+                cg.parameters.Add("-rm");
+                cg.parameters.Add(@"GET");
+                cg.parameters.Add("-o");
+                cg.parameters.Add(@"C:\temp\texoutput.txt");
+                cg.parameters.Add("-v");
+                cg.parameters.Add(@"5");
+                cg.parameters.Add("-hs");
+                cg.parameters.Add(@"c");
+
+                cg.Run();
+                return;
+            }
 
 
 

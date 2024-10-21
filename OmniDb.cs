@@ -2644,8 +2644,13 @@ namespace Seamlex.Utilities
             // 2.1.4 SNJW this does not work - needs rethinking
             // This should be simple: get the existing list of names in the dataset
             // then, check whether any already exist in "namelist" - if so, remove this from namelist and skip it when re-naming
-            if(namelist=="")
-                return;
+            if(namelist=="" && source.Tables.Count == 1)
+            {
+                // check the query itself - if possible use this
+                string tableName = this.GetTableNameFromSql(this.CurrentQuery).TrimEnd(';').TrimEnd('(');
+                if(tableName != "")
+                    source.Tables[0].TableName = tableName;
+            }
 
             // this is intentionally case-sensitive
             List<string> existing = new List<string>();
@@ -2671,6 +2676,47 @@ namespace Seamlex.Utilities
                 }
             }
         }
+
+
+        public string GetTableNameFromSql(string sqlQuery)
+        {
+            string fromClause = "FROM";
+            string asClause = "AS";
+            string tableName = string.Empty;
+
+            // Convert the query to uppercase for case-insensitive comparison
+            string upperQuery = sqlQuery.ToUpper();
+            int fromIndex = upperQuery.IndexOf(fromClause);
+
+            if (fromIndex != -1)
+            {
+                // Find the word after "FROM"
+                int tableNameStart = fromIndex + fromClause.Length;
+                string[] tokensAfterFrom = sqlQuery.Substring(tableNameStart).Trim().Split(' ','\r','\t','\n');
+
+                if (tokensAfterFrom.Length > 0)
+                {
+                    tableName = tokensAfterFrom[0]; // The table name after FROM
+
+                    // Check if there's an "AS" after the table name
+                    int asIndex = upperQuery.IndexOf(asClause, fromIndex);
+
+                    if (asIndex != -1 && asIndex > tableNameStart)
+                    {
+                        // Find the word after "AS"
+                        int aliasNameStart = asIndex + asClause.Length;
+                        string[] tokensAfterAs = sqlQuery.Substring(aliasNameStart).Trim().Split(' ','\r','\t','\n');
+
+                        if (tokensAfterAs.Length > 0)
+                        {
+                            tableName = tokensAfterAs[0]; // The alias name after AS
+                        }
+                    }
+                }
+            }
+
+            return tableName;
+        }	
 
         public string GuessQueryMethod(string sqlQuery)
         {

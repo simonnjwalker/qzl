@@ -60,6 +60,7 @@ namespace Seamlex.Utilities
             output.verbosity = GetVerbosity(output.verbosity);
             output.verblevel = GetVerbosityLevel(output.verbosity);
             output.layout = GetLayoutStyle(output.layout);
+            output.headerstyle = GetHeaderStyle(output.headerstyle);
             
             mv = output;
             return true;
@@ -83,9 +84,9 @@ namespace Seamlex.Utilities
             {
                 return this.TextAction(this.mv);
             }
-            else if(source.category.ToLower()=="http")
+            else if(source.category.ToLower()=="net")
             {
-                return this.HttpAction(this.mv);
+                return this.HttpAction(this.mv).Result;
             }
             else if(source.category.ToLower()=="json")
             {
@@ -95,34 +96,6 @@ namespace Seamlex.Utilities
         }
         public bool ValidateSource(QzlGenInfo source)
         {
-            // if(source.category=="")
-            // {
-            //     this.lastmessage = "No category of output has been entered.";
-            //     return false;
-            // }
-
-
-            // if(source.genfields.Count==0)
-            // {
-            //     this.lastmessage = $"Creating a {source.categoryname} requires at least one field to be entered.";
-            //     return false;
-            // }
-            // if(source.vname=="" && (source.category=="vm" || source.category=="view" || source.category=="facade" )) // || source.category=="controller" ))
-            // {
-            //     this.lastmessage = $"Creating a {source.categoryname} requires a ViewModel name.";
-            //     return false;
-            // }
-            // if(source.mname=="" && ( source.category=="model" ))
-            // {
-            //     this.lastmessage = $"Creating a {source.categoryname} requires a Model name.";
-            //     return false;
-            // }
-            // if(source.cname=="" && (source.category=="controller" ))
-            // {
-            //     this.lastmessage = $"Creating a {source.categoryname} requires a Controller action name.";
-            //     return false;
-            // }
-
             return true;
         }
         public bool JsonAction(QzlGenInfo source)
@@ -133,8 +106,195 @@ namespace Seamlex.Utilities
         {
             return true;
         }
-        public bool HttpAction(QzlGenInfo source)
+        public async Task<bool> HttpAction(QzlGenInfo source)
         {
+            OmniHttp netdb = new();
+            netdb.CurrentMethod = source.requestmethod;
+            netdb.CurrentURL = source.url;
+            netdb.CurrentVerbosity = source.verbosity;
+//            netdb.FileFormField = source.method;
+
+            string verbosity = GetVerbosity(netdb.CurrentVerbosity);
+            int verblevel = GetVerbosityLevel(verbosity);
+            string outputfile = source.output;
+            string filepath = source.source;
+            string outputformat = source.format;
+            string layout = source.layout;
+            int consolewidth = this.consolewidth;  // Console.WindowWidth
+            string fileformfield = netdb.FileFormField;
+
+            string url = netdb.CurrentURL;
+            string requestmethod = netdb.CurrentMethod;
+            string headerstyle = source.headerstyle;
+
+            DateTime startTime = DateTime.Now;
+
+            netdb.SetHeaders(headerstyle);
+
+            bool isasync = false;
+            if(isasync)
+            {
+                if(requestmethod == "GET")
+                {
+                    await netdb.GetAsync(url);
+                }
+                else
+                {
+                    await netdb.PostAsync(url,filepath);
+                }
+            }
+            else
+            {
+                if(requestmethod == "GET")
+                {
+                    netdb.Get(url);
+                }
+                else
+                {
+                    netdb.Post(url,filepath);
+                }
+            }
+
+            DateTime finishTime = DateTime.Now;
+
+
+            var result = netdb.LastResult;
+            var resulttext = result.ToString();
+
+
+            // overwrite if there is a result
+            string fileOutputSuccess = "";
+            if(outputfile != "")
+            {
+                if(resulttext.Length > 0)
+                {
+                    if(System.IO.File.Exists(outputfile))
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(outputfile);
+                        }
+                        catch (Exception ex)
+                        {
+                            fileOutputSuccess = $"Error: Cannot delete existing file '{outputfile}'";
+                        }
+                    }
+
+                    if(fileOutputSuccess == "")
+                    {
+                        try
+                        {
+                            System.IO.File.WriteAllText(outputfile,resulttext);
+                        }
+                        catch (Exception ex)
+                        {
+                            fileOutputSuccess = $"Error: Cannot write to file '{outputfile}'";
+                        }
+
+                    }
+                }
+            }
+
+
+            // console output
+            StringBuilder console = new();
+
+        // 1.0.8 verbosity level reflects what to output to the console window
+        //   None|n|nil|0      No console output
+        //   Minimum|min|m|1   1 (success) or 0 (failure)
+        //   Low|low|l|2       Server message
+        //   Default|def|d|3   Server message + numchars + time to complete
+        //   High|h|4          Server message + numchars + result + time to complete
+        //   Full|all|max|f|5  Server message + numchars + result + time to complete + explanation
+
+            if(verblevel > 3 )
+                console.AppendLine("URL: " + netdb.CurrentURL);
+
+            if(verblevel > 2 )
+            {
+                console.AppendLine($"Number of characters returned: {result.Length}");
+                // console.AppendLine("Query method: " + requestmethod);
+                // if(sqldb.CurrentOutputProvider.Trim() != "" && sqldb.CurrentOutputProvider != "Default")
+                // {
+                //     console.AppendLine("Output provider: " + sqldb.CurrentOutputProvider);
+                // }
+                // if(outputformat.Trim() != "" && outputformat != "Default")
+                // {
+                //     console.AppendLine("Output format: " + outputformat);
+                // }
+                // if(outputfile.Trim() != "" && outputfile != "Default")
+                // {
+                //     console.AppendLine("Output file: " + outputfile);
+                // }
+            }
+
+
+            if(verblevel > 3 )
+                console.AppendLine("Start time: " + startTime.ToLongTimeString());
+            if(verblevel > 3 )
+                console.AppendLine("Finish time: " + finishTime.ToLongTimeString());
+
+            if(verblevel == 1 )
+            {
+                if(resulttext.Length == 0 || fileOutputSuccess != "" || netdb.LastError != "")
+                {
+                    console.AppendLine("0");
+                }
+                else
+                {
+                    console.AppendLine("1");
+                }
+            }
+            
+
+            if(verblevel > 2 )
+            {
+                var timeDifference = finishTime - startTime;
+                if(timeDifference.Milliseconds > 2000)
+                {
+                    console.AppendLine("Execution length: " + timeDifference.Seconds.ToString() + " seconds");
+                }
+                else
+                {
+                    console.AppendLine("Execution length: " + timeDifference.Milliseconds.ToString() + "ms");
+                }
+            }
+
+
+            if(netdb.LastError != "" && verblevel > 1)
+            {
+                console.AppendLine($"Last error: " + netdb.LastError);
+            }
+
+            if(fileOutputSuccess != "" && verblevel > 1)
+            {
+                console.AppendLine(fileOutputSuccess);
+            }
+
+            if(verblevel > 2)
+            {
+                if(fileOutputSuccess == "" && netdb.LastError == "")
+                {
+                    if(resulttext == "")
+                    {
+                        console.AppendLine($"No results were found");
+                    }
+                    else
+                    {
+                        console.AppendLine(new String('-', 20));
+                        console.AppendLine($"Results:");
+                        console.AppendLine(new String('-', 20));
+                        console.AppendLine(resulttext);
+                        console.AppendLine(new String('-', 20));
+                    }
+                }
+
+
+            }
+
+
+            this.lastmessage = console.ToString();
+        
             return true;
         }
 
@@ -251,7 +411,9 @@ namespace Seamlex.Utilities
             string outputfile = source.output;
             string outputformat = source.format;
             string layout = source.layout;
+            
             int consolewidth = this.consolewidth;  // Console.WindowWidth
+            int maxrows = source.maxrows;  // Console.WindowWidth
 
 
             DateTime startTime = DateTime.Now;
@@ -427,6 +589,14 @@ namespace Seamlex.Utilities
                 {
                     maxLines = (2^24)-1;
                 }
+
+                // if the parameter is not set, maxrows will be -1 and we use the verbosity defaults
+                // if 0, skip all
+                // otherwise use the parameter
+
+                if(maxrows >= 0)
+                    maxLines = maxrows;
+
                 // if(verbosity == "Full")
                 //     maxLines = (2^24)-1;
 
@@ -461,113 +631,116 @@ namespace Seamlex.Utilities
 // FirstName: Bianca
 // LastName:  Bosun
 
-
-                if(layout == "Table")
+                if(maxrows != 0)
                 {
-                    for (int i = 0; i < sqldb.LastResult.Tables.Count; i++)
-                    {
-                        if(i>0)
-                            console.AppendLine($" ");
-                        if(verblevel > 3)
-                        {
-                            console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
-                            console.AppendLine($"{sqldb.LastResult.Tables[i].TableName}");
-                            console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
-                        }
-                        console.AppendLine(sqldb.GetPipeTable(sqldb.LastResult.Tables[i],maxLines ));
-                    }
-                }
-                else if(layout == "Group" || layout == "Vertical")
-                {
-                    // int consoleWidth = Console.WindowWidth;
-                    bool hasResults = false;
-                    
-                    for (int i = 0; i < sqldb.LastResult.Tables.Count; i++)
-                    {
-                        if (i > 0)
-                            console.AppendLine(" ");
 
-                        int maxFieldWidth = 0;
-                        foreach (System.Data.DataColumn column in sqldb.LastResult.Tables[i].Columns)
+                    if(layout == "Table")
+                    {
+                        for (int i = 0; i < sqldb.LastResult.Tables.Count; i++)
                         {
-                            if (column.ColumnName.Trim().Length > maxFieldWidth)
-                            {
-                                maxFieldWidth = column.ColumnName.Trim().Length;
-                            }
-                        }
-                    
-                        if (verblevel > 3 )
-                        {
-                            if(sqldb.LastResult.Tables.Count==1 && sqldb.LastResult.Tables[0].TableName == "Table")
-                            {
-                                console.AppendLine(new String('-', 20));
-                                console.AppendLine($"Results:");
-                                console.AppendLine(new String('-', 20));
-                            }
-                            else
+                            if(i>0)
+                                console.AppendLine($" ");
+                            if(verblevel > 3)
                             {
                                 console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
                                 console.AppendLine($"{sqldb.LastResult.Tables[i].TableName}");
                                 console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
                             }
+                            console.AppendLine(sqldb.GetPipeTable(sqldb.LastResult.Tables[i],maxLines ));
                         }
-
-                        if(layout == "Group" )
+                    }
+                    else if(layout == "Group" || layout == "Vertical")
+                    {
+                        // int consoleWidth = Console.WindowWidth;
+                        bool hasResults = false;
+                        
+                        for (int i = 0; i < sqldb.LastResult.Tables.Count; i++)
                         {
-                            int valueWidth = consolewidth - maxFieldWidth - 1; // Adjust value width based on console width
+                            if (i > 0)
+                                console.AppendLine(" ");
+
+                            int maxFieldWidth = 0;
                             foreach (System.Data.DataColumn column in sqldb.LastResult.Tables[i].Columns)
                             {
-                                string fieldName = column.ColumnName;
-                                
-                                // Limit the width of the field name
-                                string fieldNamePadded = (fieldName.Trim()+':').PadRight(maxFieldWidth+1);
-
-                                // Output key-value pairs for each row, limiting the second column's width
-                                foreach (System.Data.DataRow row in sqldb.LastResult.Tables[i].Rows)
+                                if (column.ColumnName.Trim().Length > maxFieldWidth)
                                 {
-                                    string value = row[column].ToString();
-                                    string valueFormatted = value.Length > valueWidth ? value.Substring(0, valueWidth - 1) + "…" : value;
-
-                                    console.AppendLine($"{fieldNamePadded} {valueFormatted}");
-                                    hasResults = true;
+                                    maxFieldWidth = column.ColumnName.Trim().Length;
                                 }
                             }
-                        }
-                        else if(layout == "Vertical" )
-                        {
-                            int valueWidth = consolewidth - maxFieldWidth - 1; // Adjust value width based on console width
-                            for (int j = 0; j < sqldb.LastResult.Tables[i].Rows.Count; j++)
+                        
+                            if (verblevel > 3 )
                             {
-                                System.Data.DataRow row = sqldb.LastResult.Tables[i].Rows[j];
-                                hasResults = true;
-                                if (j>0)
+                                if(sqldb.LastResult.Tables.Count==1 && sqldb.LastResult.Tables[0].TableName == "Table")
+                                {
                                     console.AppendLine(new String('-', 20));
+                                    console.AppendLine($"Results:");
+                                    console.AppendLine(new String('-', 20));
+                                }
+                                else
+                                {
+                                    console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
+                                    console.AppendLine($"{sqldb.LastResult.Tables[i].TableName}");
+                                    console.AppendLine(new String('-', sqldb.LastResult.Tables[i].TableName.Length));
+                                }
+                            }
 
-                                // Output key-value pairs for each row, limiting the second column's width
+                            if(layout == "Group" )
+                            {
+                                int valueWidth = consolewidth - maxFieldWidth - 1; // Adjust value width based on console width
                                 foreach (System.Data.DataColumn column in sqldb.LastResult.Tables[i].Columns)
                                 {
-                                    // Limit the width of the field name
                                     string fieldName = column.ColumnName;
+                                    
+                                    // Limit the width of the field name
                                     string fieldNamePadded = (fieldName.Trim()+':').PadRight(maxFieldWidth+1);
-                                    string value = row[column].ToString();
-                                    string valueFormatted = value.Length > valueWidth ? value.Substring(0, valueWidth - 1) + "…" : value;
 
-                                    console.AppendLine($"{fieldNamePadded} {valueFormatted}");
+                                    // Output key-value pairs for each row, limiting the second column's width
+                                    foreach (System.Data.DataRow row in sqldb.LastResult.Tables[i].Rows)
+                                    {
+                                        string value = row[column].ToString();
+                                        string valueFormatted = value.Length > valueWidth ? value.Substring(0, valueWidth - 1) + "…" : value;
+
+                                        console.AppendLine($"{fieldNamePadded} {valueFormatted}");
+                                        hasResults = true;
+                                    }
                                 }
                             }
+                            else if(layout == "Vertical" )
+                            {
+                                int valueWidth = consolewidth - maxFieldWidth - 1; // Adjust value width based on console width
+                                for (int j = 0; j < sqldb.LastResult.Tables[i].Rows.Count; j++)
+                                {
+                                    System.Data.DataRow row = sqldb.LastResult.Tables[i].Rows[j];
+                                    hasResults = true;
+                                    if (j>0)
+                                        console.AppendLine(new String('-', 20));
+
+                                    // Output key-value pairs for each row, limiting the second column's width
+                                    foreach (System.Data.DataColumn column in sqldb.LastResult.Tables[i].Columns)
+                                    {
+                                        // Limit the width of the field name
+                                        string fieldName = column.ColumnName;
+                                        string fieldNamePadded = (fieldName.Trim()+':').PadRight(maxFieldWidth+1);
+                                        string value = row[column].ToString();
+                                        string valueFormatted = value.Length > valueWidth ? value.Substring(0, valueWidth - 1) + "…" : value;
+
+                                        console.AppendLine($"{fieldNamePadded} {valueFormatted}");
+                                    }
+                                }
+                            }
+
                         }
 
-                    }
-
-                    if (verblevel > 3 )
-                    {
-                        if(hasResults == true)
+                        if (verblevel > 3 )
                         {
-                            console.AppendLine(new String('-', 20));
-                        }
-                        else
-                        {
-                            console.AppendLine("{no results were returned}");
+                            if(hasResults == true)
+                            {
+                                console.AppendLine(new String('-', 20));
+                            }
+                            else
+                            {
+                                console.AppendLine("{no results were returned}");
+                            }
                         }
                     }
                 }
@@ -1246,6 +1419,76 @@ namespace Seamlex.Utilities
         }
 
         
+        // 1.0.9 header style different browser agents
+
+            // if(headerStyle == "Chrome") //  Chrome on Windows.
+            // else if(headerStyle == "Firefox") // Mozilla Firefox on Windows 10
+            // else if(headerStyle == "Edge") // Microsoft Edge on Windows 11
+            // else if(headerStyle == "Safari") // 4. Safari on macOS (Big Sur)
+            // else if(headerStyle == "ChromeMacOS") // Google Chrome on macOS (Monterey)
+            // else if(headerStyle == "ChromeAndroid") // Google Chrome on Android
+            // else if(headerStyle == "SafariiOS") // Safari on iOS
+            // else if(headerStyle == "Opera") // Opera on Windows 10
+            // else if(headerStyle == "ChromeLinux") // Google Chrome on Linux (Ubuntu)
+
+        private static string GetHeaderStyle(string headerStyle)
+        {
+            headerStyle = headerStyle.ToLower().Trim();
+
+            switch (headerStyle)
+            {
+                case "c":
+                case "chrome":
+                    headerStyle = "Chrome";
+                    break;
+                case "e":
+                case "m":
+                case "msedge":
+                case "edge":
+                    headerStyle = "Edge";
+                    break;
+                case "o":
+                case "opera":
+                    headerStyle = "Opera";
+                    break;
+                case "f":
+                case "firefox":
+                    headerStyle = "Firefox";
+                    break;
+                case "s":
+                case "safari":
+                    headerStyle = "Safari";
+                    break;
+                case "cm":
+                case "chromemac":
+                case "chromemacos":
+                    headerStyle = "ChromeMacOS";
+                    break;
+                case "a":
+                case "ca":
+                case "android":
+                case "chromeandroid":
+                    headerStyle = "ChromeAndroid";
+                    break;
+                case "iios":
+                case "ios":
+                case "mac":
+                case "safariios":
+                case "safarios":
+                    headerStyle = "SafariiOS";
+                    break;
+                case "cl":
+                case "linux":
+                case "chromelinux":
+                    headerStyle = "ChromeLinux";
+                    break;
+                default:
+                    headerStyle = "Chrome";
+                    break;
+            }
+            return headerStyle;
+        }
+
         // 1.0.8 layout style for data output to the console window
         private static string GetLayoutStyle(string layoutText)
         {
