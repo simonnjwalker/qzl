@@ -214,6 +214,16 @@ namespace Seamlex.Utilities
             if(verblevel > 3 )
                 console.AppendLine("URL: " + netdb.CurrentURL);
 
+            if(verblevel > 4 )
+            {
+                console.AppendLine("Request headers: " + netdb.CurrentURL);
+                foreach (var requestHeader in netdb.GetRequestHeaders())
+                    console.AppendLine(requestHeader);
+                console.AppendLine("Response headers: " + netdb.CurrentURL);
+                foreach (var responseHeader in netdb.GetResponseHeaders())
+                    console.AppendLine(responseHeader);
+            }
+
             if(verblevel > 2 )
             {
                 console.AppendLine($"Number of characters returned: {result.Length}");

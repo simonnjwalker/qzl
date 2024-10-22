@@ -47,7 +47,8 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
         static void Main(string[] args)
         {
             QzlMain cg = new();
-            // test
+            // test 
+            bool testheader = false;
             bool testmaxrows = false;
             bool testxml = false;
             bool testget = false;
@@ -81,6 +82,42 @@ qzl sql -q "SELECT [QCELinkClassT].[EQID], [QCELinkClassT].[Class_Name], [QCELin
 qzl sql -q "SELECT * FROM QCENoteT;" -c C:\snjw\code\pshs\ar23.accdb -o c:\temp\QCENoteT.xml -v 5 -la v
 
 */
+
+
+
+            if(testheader)
+            {
+
+// qzl net -u "http://localhost:5005/api/v1/upload/xml/StudentT/087474676dbc4cc48014274ac6aeb6c2" -rm POST -o StudentT.xml -v 5 -mr 0
+
+//    c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe net -u "http://localhost:5005/api/v1/upload/xml/StudentT/087474676dbc4cc48014274ac6aeb6c2" -rm POST -o StudentT.xml -v 5 -mr 0
+
+
+
+// helptext.Add( "  -u|--url           Remote location.");
+// helptext.Add($" -hs|--headerstyle   Style of header (Chrome/Edge/FireFox).");
+// helptext.Add($" -rm|--requestmethod Request method (GET/POST).");
+// helptext.Add($"  -s|--source        Full path to upload file.");
+// helptext.Add($"  -o|--output        Full path to output file.");
+// helptext.Add( "  -v|--verbosity     Level of information displayed in console.");
+// "Unable to track an instance of type 'QCEStudentT' because it does not have a primary key. Only entity types with a primary key may be tracked."
+
+  
+                // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+                cg.parameters.Clear();
+                cg.parameters.Add("net");
+                cg.parameters.Add("-u");
+                cg.parameters.Add(@"http://localhost:5005/api/v1/upload/xml/StudentT/087474676dbc4cc48014274ac6aeb6c2");
+                cg.parameters.Add("-rm");
+                cg.parameters.Add(@"POST");
+                cg.parameters.Add("-s");
+                cg.parameters.Add(@"C:\snjw\code\pshs\QCEStudentT.xml");
+                cg.parameters.Add("-v");
+                cg.parameters.Add(@"5");
+
+                cg.Run();
+                return;
+            }
 
 
             if(testmaxrows)
@@ -123,6 +160,8 @@ qzl sql -q "SELECT * FROM QCENoteT;" -c C:\snjw\code\pshs\ar23.accdb -o c:\temp\
 
             if(testpost)
             {
+
+// qzl net -u "http://localhost:5005/api/v1/upload/xml/StudentT/087474676dbc4cc48014274ac6aeb6c2" -rm POST -o StudentT.xml -v 5 -mr 0
 
 
 // helptext.Add( "  -u|--url           Remote location.");

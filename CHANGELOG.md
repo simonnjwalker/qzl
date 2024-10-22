@@ -1,13 +1,17 @@
-## [1.1.0] - 2024-08-22
+## [1.1.1] - 2024-10-22
+### Added
+- Request/Response headers now appear in console with verbosity=5
+
+## [1.1.0] - 2024-10-22
 ### Fixed
 - maxrows error fixed
 
-## [1.0.9] - 2024-08-21
+## [1.0.9] - 2024-10-21
 ### Added
 - qzl net allows http GET/POST and file uploads
 - maxrows parameter now controls output to the console
 
-## [1.0.8] - 2024-08-20
+## [1.0.8] - 2024-10-20
 ### Added
 - Vertical layout parameter (for console only) -la|--layout vertical
 

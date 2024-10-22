@@ -175,6 +175,7 @@ namespace Seamlex.Utilities
 
 
         private static readonly HttpClient _httpClient = new HttpClient();
+        private static HttpResponseHeaders? _httpResponseHeaders;
 
 
 //httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
@@ -222,6 +223,28 @@ namespace Seamlex.Utilities
             return true;
         }
 
+        public List<string> GetRequestHeaders()
+        {
+            List<string> output = new();
+            foreach (var header in _httpClient.DefaultRequestHeaders)
+            {
+                output.Add($"  {header.Key}: {string.Join(", ", header.Value)}");
+            }
+            return output;
+        } 
+        public List<string> GetResponseHeaders()
+        {
+            List<string> output = new();
+            if(_httpResponseHeaders != null)
+            {
+                foreach (var header in _httpResponseHeaders)
+                {
+                    output.Add($"  {header.Key}: {string.Join(", ", header.Value)}");
+                }
+            }
+            return output;
+        } 
+
 
         public bool Post(string uploadUrl, string filePath = "")
         {
@@ -232,29 +255,48 @@ namespace Seamlex.Utilities
         {
             try
             {
-                if (filePath!="" && !File.Exists(filePath))
+                // Check if the file path is valid
+                if (filePath != "" && !File.Exists(filePath))
                 {
-                    this.lasterror = $"Could not open file '{filePath}'.";
+                    this.LastError = $"Could not open file '{filePath}'.";
                     return false;
                 }
 
+                // Create the multipart form-data content
                 using (var form = new MultipartFormDataContent())
                 {
-                    if (filePath!="")
+                    if (filePath != "")
                     {
+                        // Read the file bytes
                         var fileContent = new ByteArrayContent(await File.ReadAllBytesAsync(filePath));
+
+                        // Set the Content-Type header based on the file type (adjust if needed)
                         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
-                        form.Add(fileContent, this.fileformfield, Path.GetFileName(filePath));
+
+                        // Correctly set the Content-Disposition header with name and filename
+                        fileContent.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+                        {
+                            Name = $"\"{this.fileformfield}\"", // Ensure the name is enclosed in quotes
+                            FileName = $"\"{Path.GetFileName(filePath)}\"" // Ensure the filename is enclosed in quotes
+                        };
+
+                        // Add the file content to the form
+                        form.Add(fileContent);
                     }
 
+                    // Send the POST request
                     var response = await _httpClient.PostAsync(uploadUrl, form);
+
+                    // Read the response content
                     this.LastResult = await response.Content.ReadAsStringAsync();
+                    _httpResponseHeaders = response.Headers;
 
                     return response.IsSuccessStatusCode;
                 }
             }
             catch (Exception ex)
             {
+                // Handle any exceptions
                 this.LastError = $"Could not complete upload: '{ex.Message}'.";
                 return false;
             }
@@ -274,6 +316,7 @@ namespace Seamlex.Utilities
                     var response = await _httpClient.GetAsync(targetUrl);
                     // this.LastResult = response.Content.ToString();
                     this.LastResult = await response.Content.ReadAsStringAsync();
+                    _httpResponseHeaders = response.Headers;
                     return response.IsSuccessStatusCode;
                 }
             }
