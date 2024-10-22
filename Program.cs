@@ -48,6 +48,7 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
         {
             QzlMain cg = new();
             // test
+            bool testmaxrows = false;
             bool testxml = false;
             bool testget = false;
             bool testpost = false;
@@ -79,11 +80,29 @@ qzl sql -q "SELECT [QCELinkClassT].[EQID], [QCELinkClassT].[Class_Name], [QCELin
 
 qzl sql -q "SELECT * FROM QCENoteT;" -c C:\snjw\code\pshs\ar23.accdb -o c:\temp\QCENoteT.xml -v 5 -la v
 
+*/
+
+
+            if(testmaxrows)
+            {
+                // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+                cg.parameters.Clear();
+                cg.parameters.Add("sql");
+                cg.parameters.Add("-q");
+                cg.parameters.Add(@"SELECT * FROM QCEStudentT");
+                cg.parameters.Add("-c");
+                cg.parameters.Add(@"C:\snjw\code\pshs\ar23.accdb");
+                cg.parameters.Add("-mr");
+                cg.parameters.Add(@"3");
+                cg.parameters.Add("-la");
+                cg.parameters.Add(@"v");
+
+                cg.Run();
+                return;
+            }
 
 
 
-
-        */
             if(testxml)
             {
                 System.IO.File.Delete(@"c:\temp\QCELinkClassT.xml");

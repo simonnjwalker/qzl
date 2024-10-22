@@ -1,3 +1,7 @@
+## [1.1.0] - 2024-08-22
+### Fixed
+- maxrows error fixed
+
 ## [1.0.9] - 2024-08-21
 ### Added
 - qzl net allows http GET/POST and file uploads

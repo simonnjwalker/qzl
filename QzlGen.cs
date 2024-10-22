@@ -47,6 +47,10 @@ namespace Seamlex.Utilities
                             prop.SetValue(output, false);
                         }
                     }
+                    else if(prop.PropertyType.FullName.Equals("System.Int32"))
+                    {
+                        prop.SetValue(output, Int32.Parse("0" + new string((checkvalue.nextinput.Trim() ?? "0").ToString().Where(char.IsDigit).ToArray())));
+                    }
                     else
                     {
                         prop.SetValue(output, checkvalue.nextinput);
@@ -174,7 +178,7 @@ namespace Seamlex.Utilities
                         {
                             System.IO.File.Delete(outputfile);
                         }
-                        catch (Exception ex)
+                        catch // (Exception ex)
                         {
                             fileOutputSuccess = $"Error: Cannot delete existing file '{outputfile}'";
                         }
@@ -186,7 +190,7 @@ namespace Seamlex.Utilities
                         {
                             System.IO.File.WriteAllText(outputfile,resulttext);
                         }
-                        catch (Exception ex)
+                        catch // (Exception ex)
                         {
                             fileOutputSuccess = $"Error: Cannot write to file '{outputfile}'";
                         }
@@ -695,8 +699,11 @@ namespace Seamlex.Utilities
                                     string fieldNamePadded = (fieldName.Trim()+':').PadRight(maxFieldWidth+1);
 
                                     // Output key-value pairs for each row, limiting the second column's width
-                                    foreach (System.Data.DataRow row in sqldb.LastResult.Tables[i].Rows)
+                                    for (int j = 0; j < sqldb.LastResult.Tables[i].Rows.Count; j++)
                                     {
+                                        if(j == maxLines)
+                                            break;
+                                        System.Data.DataRow row = sqldb.LastResult.Tables[i].Rows[j];
                                         string value = row[column].ToString();
                                         string valueFormatted = value.Length > valueWidth ? value.Substring(0, valueWidth - 1) + "…" : value;
 
@@ -710,6 +717,8 @@ namespace Seamlex.Utilities
                                 int valueWidth = consolewidth - maxFieldWidth - 1; // Adjust value width based on console width
                                 for (int j = 0; j < sqldb.LastResult.Tables[i].Rows.Count; j++)
                                 {
+                                    if(j == maxLines)
+                                        break;
                                     System.Data.DataRow row = sqldb.LastResult.Tables[i].Rows[j];
                                     hasResults = true;
                                     if (j>0)
