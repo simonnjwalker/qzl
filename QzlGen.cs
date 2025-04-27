@@ -7,6 +7,9 @@ using System.Linq;
 using System.Text;
 using DocumentFormat.OpenXml.Features;
 using Seamlex.Utilities;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
+
 #pragma warning disable CS8602, CS8600, CS0219
 namespace Seamlex.Utilities
 {
@@ -96,6 +99,10 @@ namespace Seamlex.Utilities
             {
                 return this.JsonAction(this.mv);
             }
+            else if(source.category.ToLower()=="pdf")
+            {
+                return this.PdfAction(this.mv);
+            }
             return false;
         }
         public bool ValidateSource(QzlGenInfo source)
@@ -110,6 +117,151 @@ namespace Seamlex.Utilities
         {
             return true;
         }
+        public bool PdfAction(QzlGenInfo source)
+        {
+            string inputPath = source.source;
+            string outputPath = source.output;
+            string outputFormat = source.format.ToLower();
+
+            // Normalize output format
+            if (outputFormat == "h" || outputFormat == "web" || outputFormat == "htm")
+                outputFormat = "html";
+            if (outputFormat == "t" || outputFormat == "text" || outputFormat == "")
+                outputFormat = "txt";
+            if (outputFormat != "html" && outputFormat != "txt")
+                outputFormat = "pdf";
+
+            int verbLevel = GetVerbosityLevel(source.verbosity);
+            StringBuilder console = new();
+
+            // If output path is empty, default to current directory
+            if (string.IsNullOrWhiteSpace(outputPath))
+                outputPath = Directory.GetCurrentDirectory();
+
+            // Extract directory and pattern from inputPath
+            string inputDir = Path.GetDirectoryName(inputPath) ?? "";
+
+            // if inputDir is empty, the user might have specified just a file name
+            // in that case, use the current directory
+            if(inputDir == "")
+                inputDir = Directory.GetCurrentDirectory();
+
+            string pattern = Path.GetFileName(inputPath) ?? "";
+
+            if (string.IsNullOrEmpty(inputDir) || !Directory.Exists(inputDir))
+            {
+                if (verbLevel > 1)
+                    console.AppendLine("Invalid input path or directory not found.");
+                if (verbLevel == 1)
+                    console.AppendLine("0");
+
+                this.lastmessage = console.ToString();
+                if (verbLevel > 0)
+                    Console.WriteLine(this.lastmessage);
+                return false;
+            }
+
+            string[] pdfFiles = Directory.GetFiles(inputDir, pattern);
+            if (pdfFiles.Length == 0)
+            {
+                console.AppendLine($"Could not find file(s) '{pattern}' in directory '{inputDir}'.");
+                this.lastmessage = console.ToString();
+                if (verbLevel > 0)
+                    Console.WriteLine(this.lastmessage);
+                return false;
+            }
+
+            bool singleInput = pdfFiles.Length == 1 && !pattern.Contains("*") && !pattern.Contains("?");
+            bool outputIsFile = Path.HasExtension(outputPath) && (outputFormat == "txt" || outputFormat == "html");
+
+            int fileCount = 0;
+            string lastError = "";
+
+            foreach (string file in pdfFiles)
+            {
+                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
+                string outFile;
+
+                if (singleInput && outputIsFile)
+                {
+                    // If input is a single file and output is a file, use outputPath directly
+                    outFile = outputPath;
+                }
+                else
+                {
+                    // Otherwise, build output file per input file
+                    outFile = Path.Combine(outputPath, $"{fileNameWithoutExt}.{outputFormat}");
+                }
+
+                try
+                {
+                    if (outputFormat == "txt" || outputFormat == "html")
+                    {
+                        StringBuilder text = new();
+                        using (PdfReader reader = new PdfReader(file))
+                        using (PdfDocument pdfDoc = new PdfDocument(reader))
+                        {
+                            for (int i = 1; i <= pdfDoc.GetNumberOfPages(); i++)
+                            {
+                                text.AppendLine(PdfTextExtractor.GetTextFromPage(pdfDoc.GetPage(i)));
+                            }
+                        }
+
+                        string finalText = text.ToString();
+
+                        if (outputFormat == "html")
+                        {
+                            finalText = $"<html><body><pre>{System.Net.WebUtility.HtmlEncode(finalText)}</pre></body></html>";
+                        }
+
+                        File.WriteAllText(outFile, finalText);
+                        fileCount++;
+
+                        if (verbLevel >= 2)
+                            console.AppendLine($"Created: {outFile}");
+                    }
+                    else
+                    {
+                        console.AppendLine($"Unsupported format: {outputFormat}");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lastError = $"Error processing {file}: {ex.Message}";
+                    console.AppendLine(lastError);
+                }
+            }
+
+            if (verbLevel == 1)
+            {
+                console.AppendLine($"{fileCount}");
+            }
+            else if (verbLevel >= 2)
+            {
+                if (fileCount == 0)
+                {
+                    console.AppendLine($"No files were created");
+                }
+                else if (fileCount == 1)
+                {
+                    console.AppendLine($"Created 1 file");
+                }
+                else
+                {
+                    console.AppendLine($"Created {fileCount} files");
+                }
+            }
+
+            this.lastmessage = console.ToString();
+            // if (verbLevel > 0)
+            //     Console.WriteLine(this.lastmessage);
+
+            return true;
+        }
+
+
+
         public async Task<bool> HttpAction(QzlGenInfo source)
         {
             OmniHttp netdb = new();

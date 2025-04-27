@@ -1,3 +1,7 @@
+## [1.1.2] - 2025-04-20
+### Added
+- PDF to TXT with UglyToad.PdfPig
+
 ## [1.1.1] - 2024-10-22
 ### Added
 - Request/Response headers now appear in console with verbosity=5

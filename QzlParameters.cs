@@ -19,8 +19,10 @@ namespace Seamlex.Utilities
         {
             ps.Clear();
             ps.AddRange(this.SetParameterInfoByCategory("--help"));
+            ps.AddRange(this.SetParameterInfoByCategory("--version"));
             ps.AddRange(this.SetParameterInfoByCategory("sql"));
             ps.AddRange(this.SetParameterInfoByCategory("net"));
+            ps.AddRange(this.SetParameterInfoByCategory("pdf"));
             // ps.AddRange(this.SetParameterInfoByCategory("text"));
             // ps.AddRange(this.SetParameterInfoByCategory("json"));
             return;
@@ -49,6 +51,7 @@ namespace Seamlex.Utilities
                         "Method:",
                         "  sql               Performs a SQL query.",
                         "  net               Performs a request to a URL.",
+                        "  pdf               Performs actions on PDF files.",
                         // "  text              Performs operations on a text file.",
                         // "  json              Performs operations on a JSON file.",
                         "",
@@ -62,10 +65,33 @@ namespace Seamlex.Utilities
                     nextparaintmin = 0,
                     nextparaintmax = 65535
                 });
-
-
             }
-            if(category == "sql" || category == "net" || category == "text" || category == "json" )
+            if(category == "--version")
+            {
+                output.Add(new ParameterSetting(){
+                    category = "--version",
+                    setting = "--version",
+                    synonym = "-v",
+                    description = this.appname + " Version",
+                    isactive = false,
+                    input = "",
+                    nextisactive = false,
+                    nextinput = "",
+                    required  = false,
+                    helptext = new List<string>(){
+                        "qzl version 1.1.2 released 2025-04-20"
+                    },
+                    paratype = ParameterType.Switch,
+                    paraintmin = 0,
+                    paraintmax = 65535,
+                    nextparatype = ParameterType.Any,
+                    nextparaintmin = 0,
+                    nextparaintmax = 65535
+                });
+            }
+
+
+            if(category == "sql" || category == "net" || category == "text" || category == "json"  || category == "pdf" )
             {
                 string article = "a";
                 if(category=="sql" || category=="net")
@@ -557,7 +583,89 @@ namespace Seamlex.Utilities
                     // https://learn.microsoft.com/en-us/ef/core/managing-schemas/scaffolding/?tabs=dotnet-core-cli
 
                 }
-
+                
+                if(category == "pdf")
+                {
+                    helptext.Add($"  -s|--source        Full path to one or more PDF files.");
+                    helptext.Add($"  -o|--output        Full path to output file or folder.");
+                    helptext.Add($"  -f|--format        Format of output (PDF/TXT).");
+                    helptext.Add( "  -v|--verbosity     Level of information displayed in console.");
+                    load.Add(new ParameterSetting(){
+                        category = category,
+                        setting = "--source",
+                        synonym = "-s",
+                        description = "Source file",
+                        helptext = new List<string>(){
+                            $"Usage: qzl {category} -s sourcefilename",
+                            "",
+                            "Specify the full path to a file, files, or folder.",
+                            "",
+                            "This can have wildcards (*.*) for multiple files.",
+                        },
+                        paratype = ParameterType.Input,
+                        nextparatype = ParameterType.File
+                    });
+                    load.Add(new ParameterSetting(){
+                        category = category,
+                        setting = "--output",
+                        synonym = "-o",
+                        description = "Output File",
+                        helptext = new List<string>(){
+                            $"Usage: qzl {category} -o outputfilename",
+                            "",
+                            "Specify the name of the file to be created and optionally the full path.",
+                            "",
+                            "If no full path is specified then the current directory is used.",
+                            "This must be a valid filename and will be overwritten without notification.",
+                            "",
+                            "If no output type is specified with -f|--format then this is inferred."
+                        },
+                        paratype = ParameterType.Input,
+                        nextparatype = ParameterType.File
+                    });
+                    load.Add(new ParameterSetting(){
+                        category = category,
+                        setting = "--format",
+                        synonym = "-f",
+                        description = "Output Format",
+                        helptext = new List<string>(){
+                            $"Usage: qzl {category} -f outputformat",
+                            "",
+                            "Specify the type of output for the query.",
+                            "",
+                            "   p|pdf      PDF file",
+                            "   t|txt|text Text file",
+                            "   h|htm|html HTML file",
+                            "",
+                            "If no output type is specified is inferred from -o|--output file type.",
+                        },
+                        paratype = ParameterType.Input,
+                        nextparatype = ParameterType.Text
+                    });
+                    load.Add(new ParameterSetting(){
+                        category = category,
+                        setting = "--verbosity",
+                        synonym = "-v",
+                        description = "Verbosity level",
+                        helptext = new List<string>(){
+                            $"Usage: qzl {category} -v verbositylevel",
+                            "",
+                            "Specify the level of information outputted to the console.",
+                            "(none|minimum|low|default|high|full)",
+                            "",
+                            "The following are valid values for verbositylevel are:",
+                            "",
+                            "  None|n|nil|0      No console output",
+                            "  Minimum|min|m|1   Number of output files created",
+                            "  Low|low|l|2       List files created",
+                            "  Default|def|d|3   List files loaded + files created",
+                            "  High|h|4          List files loaded + files created + time to complete + result code",
+                            "  Full|all|max|f|5  List files loaded + files created + time to complete + result code + explanation"
+                        },
+                        paratype = ParameterType.Input,
+                        nextparatype = ParameterType.Any
+                    });
+                }
 
                 helptext.Add("  -h|--help          Display help.");
                 help.helptext.AddRange(helptext);

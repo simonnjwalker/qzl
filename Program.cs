@@ -35,6 +35,7 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
         /// Method:
         ///   sql               Performs a SQL query.
         ///   http              Performs an HTTP query.
+        ///   pdf               Performs operations on a PDF file.
         ///   text              Performs operations on a text file.
         ///   json              Performs operations on a JSON file.
         /// 
@@ -48,6 +49,7 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
         {
             QzlMain cg = new();
             // test 
+            bool testpdf = false;
             bool testheader = false;
             bool testmaxrows = false;
             bool testxml = false;
@@ -61,8 +63,44 @@ xcopy c:\snjw\code\qzl\bin\Release\net7.0\win-x64\publish\qzl.exe c:\windows\sys
             bool testnoquery = false;
             bool testinfo = false;
 
-             string source = @"C:\snjw\code\shared\qzl\nullsource2.db";
-             string dboutput = @"C:\snjw\code\qzl\app.output.xlsx";
+            string source = @"C:\snjw\code\shared\qzl\nullsource2.db";
+            string dboutput = @"C:\snjw\code\qzl\app.output.xlsx";
+
+
+
+            if(testpdf)
+            {
+
+
+                // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+                cg.parameters.Clear();
+                cg.parameters.Add("pdf");
+                cg.parameters.Add("-s");
+                cg.parameters.Add(@"AGLC4-with-Bookmarks-1.pdf");
+//                 cg.parameters.Add("-o");
+//                 cg.parameters.Add(@"C:\Users\seaml\OneDrive - Department of Education\2025\LEG12\inquiry\output");
+  
+
+
+
+// qzl pdf -s AGLC4-with-Bookmarks-1.pdf -o c:\temp
+
+
+
+                // // qzl sql -c "c:\temp\f.xlsx" -q "CREATE TABLE Users (Id TEXT);"
+                // cg.parameters.Clear();
+                // cg.parameters.Add("pdf");
+                // cg.parameters.Add("-s");
+                // cg.parameters.Add(@"C:\Users\seaml\OneDrive - Department of Education\2025\LEG12\inquiry\sources\*.*");
+                // cg.parameters.Add("-o");
+                // cg.parameters.Add(@"C:\Users\seaml\OneDrive - Department of Education\2025\LEG12\inquiry\output");
+                // cg.parameters.Add("-m");
+                // cg.parameters.Add(@"5");
+
+                cg.Run();
+                return;
+            }
+
 
 // qzl sql -q "SELECT * FROM QCEStudentT;" -o c:\temp\QCEStudentT.xml
 
